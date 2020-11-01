@@ -2,3 +2,7 @@
 beginner_tutorials/
 
 learning_tf/
+
+CMakeLists.txt
+
+!rbe3002_lab2/CMakeLists.txt
