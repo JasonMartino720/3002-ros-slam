@@ -14,7 +14,7 @@ class Lab2:
         """
         ### REQUIRED CREDIT
         ### Initialize node, name it 'lab2'
-        rospy.init_node('node1', anonymous=True)
+        rospy.init_node('node1', anonymous=True) 
         ### Tell ROS that this node publishes Twist messages on the '/cmd_vel' topic
         # TODO
         ### Tell ROS that this node subscribes to Odometry messages on the '/odom' topic
