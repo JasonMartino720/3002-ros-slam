@@ -22,11 +22,11 @@ class Lab2:
 
         ### Tell ROS that this node subscribes to Odometry messages on the '/odom' topic
         ### When a message is received, call self.update_odometry
-        rospy.Subscriber("/odom", Odometry, self.update_odometry())
+        rospy.Subscriber("/odom", Odometry, self.update_odometry)
 
         ### Tell ROS that this node subscribes to PoseStamped messages on the '/move_base_simple/goal' topic
         ### When a message is received, call self.go_to
-        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.go_to())
+        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.go_to)
 
 
     def send_speed(self, linear_speed, angular_speed):
@@ -96,9 +96,9 @@ class Lab2:
 
         ix = msg.point.x
         iy = msg.point.y
-        self.rotate(math.atan((py-iy)/(px-ix)))
+        self.rotate(math.atan((self.py-iy)/(self.px-ix)))
 
-        self.drive(dist_between(msg.point.x,msg.point.y),0.1)
+        self.drive(self.dist_between(msg.point.x, msg.point.y), 0.1)
 
         quat_orig = msg.quaternion
         quat_list = [quat_orig.x, quat_orig.y, quat_orig.z, quat_orig.w]
