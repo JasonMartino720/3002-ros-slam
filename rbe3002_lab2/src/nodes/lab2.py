@@ -125,7 +125,7 @@ class Lab2:
         TOLERANCE = 0.01 #meters
 
         goal = msg.pose.position
-        
+
         self.send_speed(0.22, solve_arc_omega(self.px,self.py,self.th,goal.x,goal.y))
         while(dist_between(self.px,self.py,goal.x,goal.y) <  TOLERANCE):
             rospy.sleep(0.005)
@@ -187,10 +187,10 @@ def solve_turn_dir(current_angle,goal_angle):
         diff += math.pi
     if(diff > math.pi/2):
         return 1 # left turn
-    else
+    else:
         return -1 # right turn
 
-def angle_to_goal(curr_x,curr_y,curr_x,goal_y):
+def angle_to_goal(curr_x,curr_y,goal_x,goal_y):
     return math.atan2((curr_y-goal_y), (curr_x-goal_x))+math.pi
 
 def solve_arc_radius(curr_x,curr_y,curr_theta,goal_x,goal_y):
