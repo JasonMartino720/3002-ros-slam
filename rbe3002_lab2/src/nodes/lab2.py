@@ -59,16 +59,26 @@ class Lab2:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The forward linear speed.
         """
-        TOLERANCE = 0.005 #meters
+        TOLERANCE = 0.5 #meters
 
         self.ix = self.px
         self.iy = self.py
 
-        self.send_speed(linear_speed,-(self.angular_z))
+        for x in range(1000):
+            rospy.sleep(0.005)
+            self.send_speed(linear_speed*(x/1000.0),0)
+        self.send_speed(linear_speed,0)
 
         while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
             rospy.sleep(0.005)
             self.send_speed(linear_speed,-(self.angular_z))
+
+        for x in range(1000):
+            rospy.sleep(0.005)
+            self.send_speed(linear_speed*((1000-x)/1000.0),0)
+
+        self.send_speed(0,0)
+
         print("Move Done!")
 
         self.send_speed(0,0)
