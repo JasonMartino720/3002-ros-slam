@@ -9,12 +9,17 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
 from tf.transformations import euler_from_quaternion
 
+
 class Lab2:
 
     def __init__(self):
         """
         Class constructor
         """
+        self.px = 0
+        self.py = 0
+        self.pth = 0
+
         ### REQUIRED CREDIT
         ### Initialize node, name it 'lab2'
         rospy.init_node('lab2', anonymous=True)
@@ -124,9 +129,7 @@ class Lab2:
         """
         ### EXTRA CREDIT
         # TODO
-        pass # delete this when you implement your code
-
-
+        pass  # delete this when you implement your code
 
     def smooth_drive(self, distance, linear_speed):
         """
@@ -136,9 +139,7 @@ class Lab2:
         """
         ### EXTRA CREDIT
         # TODO
-        pass # delete this when you implement your code
-
-
+        pass  # delete this when you implement your code
 
     def run(self):
         rospy.spin()
