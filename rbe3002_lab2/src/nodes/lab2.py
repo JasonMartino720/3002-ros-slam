@@ -193,7 +193,7 @@ def solve_turn_dir(current_angle,goal_angle):
 def angle_to_goal(curr_x,curr_y,curr_x,goal_y):
     return math.atan2((curr_y-goal_y), (curr_x-goal_x))+math.pi
 
-def solve_arc_omega(curr_x,curr_y,curr_theta,curr_x,goal_y):
+def solve_arc_radius(curr_x,curr_y,curr_theta,goal_x,goal_y):
     arc_triangle_theta = (math.pi/2) - abs(curr_theta-angle_to_goal(curr_x,curr_y,curr_x,goal_y))
     print(arc_triangle_theta)
     a = dist_between(ix,iy,x,y)/2
