@@ -137,9 +137,26 @@ class Lab2:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The maximum forward linear speed.
         """
-        ### EXTRA CREDIT
-        # TODO
-        pass # delete this when you implement your code
+        RAMP_DOWN = 0.25 #meters
+        TOLERANCE = 0.005 #meters
+
+        self.ix = self.px
+        self.iy = self.py
+
+        for x in range(100):
+            self.send_speed(linear_speed*(x/100.0),0)
+        self.send_speed(linear_speed,0)
+
+        while(dist_between(self.ix,self.iy,self.px,self.py) < distance - RAMP_DOWN):
+            rospy.sleep(0.005)
+
+        P_CONST = 0.8
+
+        while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
+            rospy.sleep(0.005)
+            self.send_speed(dist_between(self.ix,self.iy,self.px,self.py)*P_CONST,0)
+
+        self.send_speed(0,0)
 
 
 
