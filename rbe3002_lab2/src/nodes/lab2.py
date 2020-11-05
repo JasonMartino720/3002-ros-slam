@@ -196,7 +196,7 @@ def orientation_to_yaw(orientation):
 def solve_turn_dir(current_angle,goal_angle):
     """
     Takes angles between -pi -> pi and tells you which way to turn
-    1 means CCW and -1 mean CW
+    -1 means CCW and 1 mean CW
     """
     diff = goal_angle - current_angle
     if(diff < 0):
@@ -207,27 +207,21 @@ def solve_turn_dir(current_angle,goal_angle):
         return 1 # right turn
 
 def angle_to_goal(curr_x,curr_y,goal_x,goal_y):
-    return math.atan2((curr_y-goal_y), (curr_x-goal_x))
+    """
+    Find the angle of the goal w.r.t to current position
+    """
+    return normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x))) + math.pi
 
 def solve_arc_omega(curr_x,curr_y,curr_theta,goal_x,goal_y):
-    # arc_triangle_theta = (math.pi/2) - ((curr_theta-angle_to_goal(curr_x,curr_y,curr_x,goal_y)))
-    print('Current %f, %f',(curr_x,curr_y,curr_theta))
-    print('Goal %f, %f', (goal_x, goal_y))
-    print('Atan2 %f, %f', (curr_y-goal_y, curr_x-goal_x))
-    print('Raw atan2 %f',(math.atan2((curr_y-goal_y), (curr_x-goal_x))))
-    print('Raw +180 %f', (math.atan2((curr_y - goal_y), (curr_x - goal_x)))+math.pi)
-    print('Norm %f', normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x))) + math.pi)
-    goal_angle = normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x))) + math.pi
-    arc_triangle_theta = (math.pi / 2) - (goal_angle-curr_theta)
-    print("Theta:")
-    print(arc_triangle_theta)
+    """
+    Solve for the omega required for the arc
+    """
+    arc_triangle_theta = (math.pi / 2) - (angle_to_goal(curr_x,curr_y,goal_x,goal_y)-curr_theta)
+    #Solve for the angle of the right trangle between arc and normal or robot
     a = dist_between(curr_x,curr_y,goal_x,goal_y)/2
-    print("Adj:")
-    print(a)
     h = a / math.cos(arc_triangle_theta)
+    #use trig to solve for hypotenous which is radius of the arc
     r = h
-    print("Radius:")
-    print(r)
     v = 0.22 #m/sec
     omega = v/r
     return omega
