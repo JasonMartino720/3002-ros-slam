@@ -185,10 +185,10 @@ def solve_turn_dir(current_angle,goal_angle):
         diff += math.pi
     if(diff > math.pi/2):
         return 1 # left turn
-    else
+    else:
         return -1 # right turn
 
-def angle_to_goal(curr_x,curr_y,curr_x,goal_y):
+def angle_to_goal(curr_x,curr_y,goal_x,goal_y):
     return math.atan2((curr_y-goal_y), (curr_x-goal_x))+math.pi
 
 if __name__ == '__main__':
