@@ -60,6 +60,7 @@ class Lab2:
         :param linear_speed [float] [m/s] The forward linear speed.
         """
         TOLERANCE = 0.5 #meters
+        kP = 13.1;
 
         self.ix = self.px
         self.iy = self.py
@@ -71,7 +72,7 @@ class Lab2:
 
         while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
             rospy.sleep(0.005)
-            self.send_speed(linear_speed,-(self.angular_z))
+            self.send_speed(linear_speed,-(self.angular_z * kP))
 
         for x in range(1000):
             rospy.sleep(0.005)
