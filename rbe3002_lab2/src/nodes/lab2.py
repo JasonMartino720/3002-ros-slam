@@ -2,6 +2,7 @@
 
 import math
 import rospy
+import sys
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist
@@ -58,7 +59,7 @@ class Lab2:
         :param linear_speed [float] [m/s] The forward linear speed.
         """
         tolerance = 0.005 #meters
-
+        print("Hello!")
         self.ix = self.px
         self.iy = self.py
         self.send_speed(linear_speed,0)
@@ -74,18 +75,26 @@ class Lab2:
         :param angle         [float] [rad]   The distance to cover.
         :param angular_speed [float] [rad/s] The angular speed.
         """
-        tolerance = 0.005 #meters
+        tolerance = 0.1 #rad
 
         self.ith = self.pth
+
+        finalAngle = angle
+        if(finalAngle > math.pi):
+            finalAngle -= math.pi*2
+        elif(finalAngle < -math.pi):
+            finalAngle += math.pi*2
+
         self.send_speed(0, aspeed)
 
-        while(self.pth < self.ith + angle - tolerance):
+        while(abs(self.pth - (finalAngle)) > tolerance):
+            print('The target pos is %f we are currently at %f the abs error is %f' % (finalAngle, self.pth, abs(self.pth - (self.ith + angle))))
             rospy.sleep(0.005)
-
+        print("Rotate Done!")
         self.send_speed(0, 0)
 
     def dist_between(self,ix,iy,x,y):
-        return math.sqrt((ix-x * ix-x) + (iy-y * iy-y))
+        return math.sqrt(((ix-x) * (ix-x)) + ((iy-y) * (iy-y)))
 
     def go_to(self, msg):
         """
@@ -93,17 +102,18 @@ class Lab2:
         This method is a callback bound to a Subscriber.
         :param msg [PoseStamped] The target pose.
         """
+        print(msg)
 
-        ix = msg.point.x
-        iy = msg.point.y
-        self.rotate(math.atan((self.py-iy)/(self.px-ix)))
+        ix = msg.pose.position.x
+        iy = msg.pose.position.y
+        self.rotate(math.atan2((self.py-iy), (self.px-ix))+math.pi, 0.4)
 
-        self.drive(self.dist_between(msg.point.x, msg.point.y), 0.1)
+        self.drive(self.dist_between(ix, iy, self.px, self.py), 0.2)
 
-        quat_orig = msg.quaternion
+        quat_orig = msg.pose.orientation
         quat_list = [quat_orig.x, quat_orig.y, quat_orig.z, quat_orig.w]
         (roll , pitch , yaw) = euler_from_quaternion(quat_list)
-        self.rotate(yaw, 0.1)
+        self.rotate(yaw, 0.4)
 
     def update_odometry(self, msg):
         """
