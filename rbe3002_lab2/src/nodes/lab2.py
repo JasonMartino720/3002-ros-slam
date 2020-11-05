@@ -104,7 +104,7 @@ class Lab2:
         goal = msg.pose.position
 
         self.rotate(math.atan2((self.py-goal.y), (self.px-goal.x))+ math.pi, ROTATION_SPEED)
-        self.drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
+        self.smooth_drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
 
     def update_odometry(self, msg):
@@ -137,24 +137,22 @@ class Lab2:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The maximum forward linear speed.
         """
-        RAMP_DOWN = 0.25 #meters
-        TOLERANCE = 0.005 #meters
+        RAMP_DOWN = 0.5 #meters
 
         self.ix = self.px
         self.iy = self.py
 
-        for x in range(100):
-            self.send_speed(linear_speed*(x/100.0),0)
+        for x in range(1000):
+            rospy.sleep(0.005)
+            self.send_speed(linear_speed*(x/1000.0),0)
         self.send_speed(linear_speed,0)
 
         while(dist_between(self.ix,self.iy,self.px,self.py) < distance - RAMP_DOWN):
             rospy.sleep(0.005)
 
-        P_CONST = 0.8
-
-        while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
+        for x in range(1000):
             rospy.sleep(0.005)
-            self.send_speed(dist_between(self.ix,self.iy,self.px,self.py)*P_CONST,0)
+            self.send_speed(linear_speed*((1000-x)/1000.0),0)
 
         self.send_speed(0,0)
 
