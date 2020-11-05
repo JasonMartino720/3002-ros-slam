@@ -58,14 +58,16 @@ class Lab2:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The forward linear speed.
         """
-        tolerance = 0.005 #meters
-        print("Hello!")
+        TOLERANCE = 0.005 #meters
+
         self.ix = self.px
         self.iy = self.py
+
         self.send_speed(linear_speed,0)
 
-        while(self.dist_between(self.ix,self.iy,self.px,self.py) < distance - tolerance):
+        while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
             rospy.sleep(0.005)
+        print("Move Done!")
 
         self.send_speed(0,0)
 
@@ -75,26 +77,18 @@ class Lab2:
         :param angle         [float] [rad]   The distance to cover.
         :param angular_speed [float] [rad/s] The angular speed.
         """
-        tolerance = 0.1 #rad
+        TOLERANCE = 0.1 #rad
 
-        self.ith = self.pth
-
-        finalAngle = angle
-        if(finalAngle > math.pi):
-            finalAngle -= math.pi*2
-        elif(finalAngle < -math.pi):
-            finalAngle += math.pi*2
+        goalAngle = normalize_angle(angle)
 
         self.send_speed(0, aspeed)
 
-        while(abs(self.pth - (finalAngle)) > tolerance):
-            print('The target pos is %f we are currently at %f the abs error is %f' % (finalAngle, self.pth, abs(self.pth - (self.ith + angle))))
+        while(abs(self.pth - (goalAngle)) > TOLERANCE):
+            print('The target pos is %f we are currently at %f the abs error is %f' % (goalAngle, self.pth, abs(self.pth - (goalAngle))))
             rospy.sleep(0.005)
         print("Rotate Done!")
-        self.send_speed(0, 0)
 
-    def dist_between(self,ix,iy,x,y):
-        return math.sqrt(((ix-x) * (ix-x)) + ((iy-y) * (iy-y)))
+        self.send_speed(0, 0)
 
     def go_to(self, msg):
         """
@@ -102,18 +96,14 @@ class Lab2:
         This method is a callback bound to a Subscriber.
         :param msg [PoseStamped] The target pose.
         """
-        print(msg)
+        ROTATION_SPEED = 0.4 #Rad/sec
+        DRIVE_SPEED = 0.2 #Meters/sec
 
-        ix = msg.pose.position.x
-        iy = msg.pose.position.y
-        self.rotate(math.atan2((self.py-iy), (self.px-ix))+math.pi, 0.4)
+        goal = msg.pose.position
 
-        self.drive(self.dist_between(ix, iy, self.px, self.py), 0.2)
-
-        quat_orig = msg.pose.orientation
-        quat_list = [quat_orig.x, quat_orig.y, quat_orig.z, quat_orig.w]
-        (roll , pitch , yaw) = euler_from_quaternion(quat_list)
-        self.rotate(yaw, 0.4)
+        self.rotate(math.atan2((self.py-goal.y), (self.px-goal.x))+math.pi, ROTATION_SPEED)
+        self.drive(dist_between(ix, iy, self.px, self.py), DRIVE_SPEED)
+        self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
 
     def update_odometry(self, msg):
         """
@@ -123,12 +113,7 @@ class Lab2:
         """
         self.px = msg.pose.pose.position.x
         self.py = msg.pose.pose.position.y
-        quat_orig = msg.pose.pose.orientation
-        quat_list = [quat_orig.x, quat_orig.y, quat_orig.z, quat_orig.w]
-        (roll , pitch , yaw) = euler_from_quaternion(quat_list)
-        self.pth = yaw
-
-
+        self.pth = orientation_to_yaw(msg.pose.pose.orientation)
 
     def arc_to(self, position):
         """
@@ -155,6 +140,37 @@ class Lab2:
 
     def run(self):
         rospy.spin()
+
+#-------- END OF CLASS ----------
+
+def dist_between(ix,iy,x,y):
+    """
+    Get the magnitude of the displacement between two points
+    """
+    return math.sqrt(((ix-x) * (ix-x)) + ((iy-y) * (iy-y)))
+
+def normalize_angle(angle):
+    """
+    Converts any angle into the range of -pi -> pi
+    Make sure the input is in radian
+    :param angle the input angle
+    """
+    finalAngle = angle
+    while(finalAngle > math.pi):
+        finalAngle -= math.pi*2
+    while(finalAngle < -math.pi):
+        finalAngle += math.pi*2
+    print('Input: %f | Output: %f',(angle, finalAngle))
+    return finalAngle
+
+def orientation_to_yaw(orientation):
+    """
+    Takes a pose.orientation object and returns the yaw (z rotation)
+    """
+    quat_orig = orientation
+    quat_list = [quat_orig.x, quat_orig.y, quat_orig.z, quat_orig.w]
+    (roll , pitch , yaw) = euler_from_quaternion(quat_list)
+    return yaw
 
 if __name__ == '__main__':
     Lab2().run()
