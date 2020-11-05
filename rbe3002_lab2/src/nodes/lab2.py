@@ -63,15 +63,27 @@ class Lab2:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The forward linear speed.
         """
-        TOLERANCE = 0.005 #meters
+        TOLERANCE = 0.5 #meters
+        kP = 13.1;
 
         self.ix = self.px
         self.iy = self.py
 
+        for x in range(1000):
+            rospy.sleep(0.005)
+            self.send_speed(linear_speed*(x/1000.0),0)
         self.send_speed(linear_speed,0)
 
         while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
             rospy.sleep(0.005)
+            self.send_speed(linear_speed,-(self.angular_z * kP))
+
+        for x in range(1000):
+            rospy.sleep(0.005)
+            self.send_speed(linear_speed*((1000-x)/1000.0),0)
+
+        self.send_speed(0,0)
+
         print("Move Done!")
 
         self.send_speed(0,0)
@@ -86,7 +98,7 @@ class Lab2:
 
         goalAngle = normalize_angle(angle)
 
-        self.send_speed(0, solve_turn_dir(self.pth,goalAngle)*aspeed)
+        self.send_speed(0, aspeed)
 
         while(abs(self.pth - (goalAngle)) > TOLERANCE):
             print('The target pos is %f we are currently at %f the abs error is %f' % (goalAngle, self.pth, abs(self.pth - (goalAngle))))
@@ -103,14 +115,14 @@ class Lab2:
         """
 
         #From: https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
-        ROTATION_SPEED = 0.3 #Rad/sec
+        ROTATION_SPEED = 2.84 #Rad/sec
         DRIVE_SPEED = 0.22 #Meters/sec
 
         goal = msg.pose.position
 
-        self.arc_to(msg);
-        # self.rotate(math.atan2((self.py-goal.y), (self.px-goal.x))+ math.pi, ROTATION_SPEED)
-        # self.smooth_drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
+
+        self.rotate(angle_to_goal(self.px,self.py,goal.x,goal.y), ROTATION_SPEED)
+        self.drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
 
     def update_odometry(self, msg):
@@ -119,15 +131,16 @@ class Lab2:
         This method is a callback bound to a Subscriber.
         :param msg [Odometry] The current odometry information.
         """
+        self.angular_z = msg.twist.twist.angular.z
         self.px = msg.pose.pose.position.x
         self.py = msg.pose.pose.position.y
         self.pth = orientation_to_yaw(msg.pose.pose.orientation)
 
-    def arc_to(self, msg):
+    def arc_to(self, position):
         """
         Drives to a given position in an arc.
         :param msg [PoseStamped] The target pose.
-        """
+
         TOLERANCE = 0.1 #meters
 
         goal = msg.pose.position
@@ -143,6 +156,7 @@ class Lab2:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The maximum forward linear speed.
         """
+
         RAMP_DOWN = 0.5 #meters
 
         self.ix = self.px
@@ -163,11 +177,9 @@ class Lab2:
         self.send_speed(0,0)
 
 
-
     def run(self):
         rospy.spin()
 
-#-------- END OF CLASS ----------
 
 def dist_between(ix,iy,x,y):
     """
@@ -182,9 +194,9 @@ def normalize_angle(angle):
     :param angle the input angle
     """
     finalAngle = angle
-    if(finalAngle > math.pi):
+    while(finalAngle > math.pi):
         finalAngle -= math.pi*2
-    elif(finalAngle < -math.pi):
+    while(finalAngle < -math.pi):
         finalAngle += math.pi*2
     print('Input: %f | Output: %f',(angle, finalAngle))
     return finalAngle
@@ -207,15 +219,16 @@ def solve_turn_dir(current_angle,goal_angle):
     if(diff < 0):
         diff += math.pi
     if(diff > math.pi/2):
-        return -1 # left turn
+        return 1 # left turn
     else:
-        return 1 # right turn
+        return -1 # right turn
 
 def angle_to_goal(curr_x,curr_y,goal_x,goal_y):
     """
     Find the angle of the goal w.r.t to current position
     """
     return normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x))) + math.pi
+
 
 def solve_arc_omega(curr_x,curr_y,curr_theta,goal_x,goal_y):
     """
