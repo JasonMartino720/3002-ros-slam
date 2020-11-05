@@ -96,8 +96,10 @@ class Lab2:
         This method is a callback bound to a Subscriber.
         :param msg [PoseStamped] The target pose.
         """
-        ROTATION_SPEED = 0.4 #Rad/sec
-        DRIVE_SPEED = 0.2 #Meters/sec
+
+        #From: https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
+        ROTATION_SPEED = 2.84 #Rad/sec
+        DRIVE_SPEED = 0.22 #Meters/sec
 
         goal = msg.pose.position
 
@@ -171,6 +173,19 @@ def orientation_to_yaw(orientation):
     quat_list = [quat_orig.x, quat_orig.y, quat_orig.z, quat_orig.w]
     (roll , pitch , yaw) = euler_from_quaternion(quat_list)
     return yaw
+
+def solve_turn_dir(current_angle,goal_angle):
+    """
+    Takes angles between -pi -> pi and tells you which way to turn
+    1 means CCW and -1 mean CW
+    """
+    diff = goal_angle - current_angle
+    if(diff < 0):
+        diff += math.pi
+    if(diff > math.pi/2):
+        return 1 # left turn
+    else
+        return -1 # right turn
 
 if __name__ == '__main__':
     Lab2().run()
