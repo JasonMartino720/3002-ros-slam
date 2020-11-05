@@ -81,7 +81,7 @@ class Lab2:
 
         goalAngle = normalize_angle(angle)
 
-        self.send_speed(0, aspeed)
+        self.send_speed(0, solve_turn_dir(self.pth,goalAngle)*aspeed)
 
         while(abs(self.pth - (goalAngle)) > TOLERANCE):
             print('The target pos is %f we are currently at %f the abs error is %f' % (goalAngle, self.pth, abs(self.pth - (goalAngle))))
@@ -103,7 +103,7 @@ class Lab2:
 
         goal = msg.pose.position
 
-        self.rotate(angle_to_goal(self.px,self.py,goal.x,goal.y), ROTATION_SPEED)
+        self.rotate(math.atan2((self.py-goal.y), (self.px-goal.x))+ math.pi, ROTATION_SPEED)
         self.drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
 
