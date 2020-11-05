@@ -16,6 +16,10 @@ class Lab2:
         """
         Class constructor
         """
+        self.px = 0
+        self.py = 0
+        self.pth = 0
+
         ### REQUIRED CREDIT
         ### Initialize node, name it 'lab2'
         rospy.init_node('lab2', anonymous=True)
@@ -116,6 +120,7 @@ class Lab2:
 
         goal = msg.pose.position
 
+
         self.rotate(angle_to_goal(self.px,self.py,goal.x,goal.y), ROTATION_SPEED)
         self.drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
@@ -135,10 +140,15 @@ class Lab2:
         """
         Drives to a given position in an arc.
         :param msg [PoseStamped] The target pose.
-        """
-        ### EXTRA CREDIT
-        # TODO
-        pass  # delete this when you implement your code
+
+        TOLERANCE = 0.1 #meters
+
+        goal = msg.pose.position
+
+        self.send_speed(0.22, solve_arc_omega(self.px,self.py,self.pth,goal.x,goal.y))
+        while(dist_between(self.px,self.py,goal.x,goal.y) >  TOLERANCE):
+            rospy.sleep(0.005)
+        print("Arc Done!")
 
     def smooth_drive(self, distance, linear_speed):
         """
@@ -146,14 +156,30 @@ class Lab2:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The maximum forward linear speed.
         """
-        ### EXTRA CREDIT
-        # TODO
-        pass  # delete this when you implement your code
+
+        RAMP_DOWN = 0.5 #meters
+
+        self.ix = self.px
+        self.iy = self.py
+
+        for x in range(1000):
+            rospy.sleep(0.005)
+            self.send_speed(linear_speed*(x/1000.0),0)
+        self.send_speed(linear_speed,0)
+
+        while(dist_between(self.ix,self.iy,self.px,self.py) < distance - RAMP_DOWN):
+            rospy.sleep(0.005)
+
+        for x in range(1000):
+            rospy.sleep(0.005)
+            self.send_speed(linear_speed*((1000-x)/1000.0),0)
+
+        self.send_speed(0,0)
+
 
     def run(self):
         rospy.spin()
 
-#-------- END OF CLASS ----------
 
 def dist_between(ix,iy,x,y):
     """
@@ -187,7 +213,7 @@ def orientation_to_yaw(orientation):
 def solve_turn_dir(current_angle,goal_angle):
     """
     Takes angles between -pi -> pi and tells you which way to turn
-    1 means CCW and -1 mean CW
+    -1 means CCW and 1 mean CW
     """
     diff = goal_angle - current_angle
     if(diff < 0):
@@ -198,7 +224,25 @@ def solve_turn_dir(current_angle,goal_angle):
         return -1 # right turn
 
 def angle_to_goal(curr_x,curr_y,goal_x,goal_y):
-    return math.atan2((curr_y-goal_y), (curr_x-goal_x))+math.pi
+    """
+    Find the angle of the goal w.r.t to current position
+    """
+    return normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x))) + math.pi
+
+
+def solve_arc_omega(curr_x,curr_y,curr_theta,goal_x,goal_y):
+    """
+    Solve for the omega required for the arc
+    """
+    arc_triangle_theta = (math.pi / 2) - (angle_to_goal(curr_x,curr_y,goal_x,goal_y)-curr_theta)
+    #Solve for the angle of the right trangle between arc and normal or robot
+    a = dist_between(curr_x,curr_y,goal_x,goal_y)/2
+    h = a / math.cos(arc_triangle_theta)
+    #use trig to solve for hypotenous which is radius of the arc
+    r = h
+    v = 0.22 #m/sec
+    omega = v/r
+    return omega
 
 if __name__ == '__main__':
     Lab2().run()
