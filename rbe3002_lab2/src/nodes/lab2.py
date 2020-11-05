@@ -103,8 +103,8 @@ class Lab2:
 
         goal = msg.pose.position
 
-        self.rotate(math.atan2((self.py-goal.y), (self.px-goal.x))+math.pi, ROTATION_SPEED)
-        self.drive(dist_between(ix, iy, self.px, self.py), DRIVE_SPEED)
+        self.rotate(angle_to_goal(self.px,self.py,goal.x,goal.y), ROTATION_SPEED)
+        self.drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
 
     def update_odometry(self, msg):
@@ -186,6 +186,9 @@ def solve_turn_dir(current_angle,goal_angle):
         return 1 # left turn
     else
         return -1 # right turn
+
+def angle_to_goal(curr_x,curr_y,curr_x,goal_y):
+    return math.atan2((curr_y-goal_y), (curr_x-goal_x))+math.pi
 
 if __name__ == '__main__':
     Lab2().run()
