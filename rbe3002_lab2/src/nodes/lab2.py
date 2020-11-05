@@ -98,7 +98,7 @@ class Lab2:
         """
 
         #From: https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
-        ROTATION_SPEED = 2.84 #Rad/sec
+        ROTATION_SPEED = 0.3 #Rad/sec
         DRIVE_SPEED = 0.22 #Meters/sec
 
         goal = msg.pose.position
@@ -161,9 +161,9 @@ def normalize_angle(angle):
     :param angle the input angle
     """
     finalAngle = angle
-    while(finalAngle > math.pi):
+    if(finalAngle > math.pi):
         finalAngle -= math.pi*2
-    while(finalAngle < -math.pi):
+    elif(finalAngle < -math.pi):
         finalAngle += math.pi*2
     print('Input: %f | Output: %f',(angle, finalAngle))
     return finalAngle
@@ -186,9 +186,9 @@ def solve_turn_dir(current_angle,goal_angle):
     if(diff < 0):
         diff += math.pi
     if(diff > math.pi/2):
-        return 1 # left turn
+        return -1 # left turn
     else:
-        return -1 # right turn
+        return 1 # right turn
 
 def angle_to_goal(curr_x,curr_y,goal_x,goal_y):
     return math.atan2((curr_y-goal_y), (curr_x-goal_x))+math.pi
