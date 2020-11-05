@@ -103,8 +103,9 @@ class Lab2:
 
         goal = msg.pose.position
 
-        self.rotate(math.atan2((self.py-goal.y), (self.px-goal.x))+ math.pi, ROTATION_SPEED)
-        self.smooth_drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
+        self.arc_to(msg);
+        # self.rotate(math.atan2((self.py-goal.y), (self.px-goal.x))+ math.pi, ROTATION_SPEED)
+        # self.smooth_drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
 
     def update_odometry(self, msg):
@@ -122,12 +123,12 @@ class Lab2:
         Drives to a given position in an arc.
         :param msg [PoseStamped] The target pose.
         """
-        TOLERANCE = 0.01 #meters
+        TOLERANCE = 0.1 #meters
 
         goal = msg.pose.position
 
-        self.send_speed(0.22, solve_arc_omega(self.px,self.py,self.th,goal.x,goal.y))
-        while(dist_between(self.px,self.py,goal.x,goal.y) <  TOLERANCE):
+        self.send_speed(0.22, solve_arc_omega(self.px,self.py,self.pth,goal.x,goal.y))
+        while(dist_between(self.px,self.py,goal.x,goal.y) >  TOLERANCE):
             rospy.sleep(0.005)
         print("Arc Done!")
 
@@ -206,14 +207,27 @@ def solve_turn_dir(current_angle,goal_angle):
         return 1 # right turn
 
 def angle_to_goal(curr_x,curr_y,goal_x,goal_y):
-    return math.atan2((curr_y-goal_y), (curr_x-goal_x))+math.pi
+    return math.atan2((curr_y-goal_y), (curr_x-goal_x))
 
-def solve_arc_radius(curr_x,curr_y,curr_theta,goal_x,goal_y):
-    arc_triangle_theta = (math.pi/2) - abs(curr_theta-angle_to_goal(curr_x,curr_y,curr_x,goal_y))
+def solve_arc_omega(curr_x,curr_y,curr_theta,goal_x,goal_y):
+    # arc_triangle_theta = (math.pi/2) - ((curr_theta-angle_to_goal(curr_x,curr_y,curr_x,goal_y)))
+    print('Current %f, %f',(curr_x,curr_y,curr_theta))
+    print('Goal %f, %f', (goal_x, goal_y))
+    print('Atan2 %f, %f', (curr_y-goal_y, curr_x-goal_x))
+    print('Raw atan2 %f',(math.atan2((curr_y-goal_y), (curr_x-goal_x))))
+    print('Raw +180 %f', (math.atan2((curr_y - goal_y), (curr_x - goal_x)))+math.pi)
+    print('Norm %f', normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x))) + math.pi)
+    goal_angle = normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x))) + math.pi
+    arc_triangle_theta = (math.pi / 2) - (goal_angle-curr_theta)
+    print("Theta:")
     print(arc_triangle_theta)
-    a = dist_between(ix,iy,x,y)/2
+    a = dist_between(curr_x,curr_y,goal_x,goal_y)/2
+    print("Adj:")
+    print(a)
     h = a / math.cos(arc_triangle_theta)
     r = h
+    print("Radius:")
+    print(r)
     v = 0.22 #m/sec
     omega = v/r
     return omega
