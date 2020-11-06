@@ -7,6 +7,7 @@ CMakeLists.txt
 
 !rbe3002_lab2/CMakeLists.txt
 !rbe3002_lab3/CMakeLists.txt
+!RBE3002-Turtlebot-main/CMakeLists.txt
 
 rbe3002_lab2/.idea/*
 
