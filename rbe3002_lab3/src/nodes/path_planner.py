@@ -11,7 +11,7 @@ from geometry_msgs.msg import Point, Pose, PoseStamped
 class PathPlanner:
 
 
-    
+
     def __init__(self):
         """
         Class constructor
@@ -24,7 +24,7 @@ class PathPlanner:
         # TODO
         ## Create a publisher for the C-space (the enlarged occupancy grid)
         ## The topic is "/path_planner/cspace", the message type is GridCells
-        # TODO
+        self.pubCspace = rospy.Publisher("/path_planner/cspace",GridCells, queue_size = 10)
         ## Create publishers for A* (expanded cells, frontier, ...)
         ## Choose a the topic names, the message type is GridCells
         # TODO
@@ -44,8 +44,7 @@ class PathPlanner:
         :param y [int] The cell Y coordinate.
         :return  [int] The index.
         """
-        ### REQUIRED CREDIT
-        pass
+        return y * mapdata.width + x
 
 
 
@@ -61,7 +60,7 @@ class PathPlanner:
         """
         ### REQUIRED CREDIT
         pass
-        
+
 
 
     @staticmethod
@@ -73,11 +72,11 @@ class PathPlanner:
         :param y       [int]           The cell Y coordinate.
         :return        [Point]         The position in the world.
         """
-        ### REQUIRED CREDIT
-        pass
+        world_point = Point()
 
+        world_point.x = (x + 0.5) * mapdata.resolution + mapdata.origin.position.x
+        world_point.y = (y + 0.5) * mapdata.resolution + mapdata.origin.position.y
 
-        
     @staticmethod
     def world_to_grid(mapdata, wp):
         """
@@ -86,11 +85,13 @@ class PathPlanner:
         :param wp      [Point]         The world coordinate.
         :return        [(int,int)]     The cell position as a tuple.
         """
-        ### REQUIRED CREDIT
-        pass
+
+        x = int((wp.x - mapdata.origin.position.x) / mapdata.resolution)
+        y = int((wp.y - mapdata.origin.position.y) / mapdata.resolution)
+
+        grid_coord = (x, y)
 
 
-        
     @staticmethod
     def path_to_poses(mapdata, path):
         """
@@ -102,7 +103,7 @@ class PathPlanner:
         ### REQUIRED CREDIT
         pass
 
-    
+
 
     @staticmethod
     def is_cell_walkable(mapdata, x, y):
@@ -118,7 +119,7 @@ class PathPlanner:
         ### REQUIRED CREDIT
         pass
 
-               
+
 
     @staticmethod
     def neighbors_of_4(mapdata, x, y):
@@ -132,8 +133,8 @@ class PathPlanner:
         ### REQUIRED CREDIT
         pass
 
-    
-    
+
+
     @staticmethod
     def neighbors_of_8(mapdata, x, y):
         """
@@ -146,8 +147,8 @@ class PathPlanner:
         ### REQUIRED CREDIT
         pass
 
-    
-    
+
+
     @staticmethod
     def request_map():
         """
@@ -168,24 +169,57 @@ class PathPlanner:
         :param padding [int]           The number of cells around the obstacles.
         :return        [OccupancyGrid] The C-Space.
         """
-        ### REQUIRED CREDIT
+        OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
+        paddedArray = []
+        for i in mapdata.data:
+            paddedArray.append(i)
+
         ## Go through each cell in the occupancy grid
-        ## Inflate the obstacles where necessary
-        # TODO
+        for y in range(mapdata.height):
+            for x in range(mapdata.width):
+                ## Inflate the obstacles where necessary
+                if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
+                    paddedArray[self.grid_to_index(mapdata,y+1,x)] = 100
+                    paddedArray[self.grid_to_index(mapdata,y-1,x)] = 100
+                    paddedArray[self.grid_to_index(mapdata,y,x+1)] = 100
+                    paddedArray[self.grid_to_index(mapdata,y,x-1)] = 100
+
+        gridCellsList = []
+        
+        for y in range(mapdata.height):
+            for x in range(mapdata.width):
+                ## Inflate the obstacles where necessary
+                if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
+                    world_point = self.grid_to_world(mapdata,x,y)
+                    gridCellsList.append(world_point)
+
         ## Create a GridCells message and publish it
-        # TODO
+        msg = GridCells()
+        msg.cell_width = 0.03
+        msg.cell_height = 0.03
+        msg.cells = gridCellsList
+        msg.header.frame_id = "map"
+        self.pubCspace.publish(msg)
+
         ## Return the C-space
+        for i, cellValue in enumerate(paddedArray):
+            mapdata.data[i] = cellValue
+
+        return mapdata
+
+
+        # TODO
         pass
 
 
-    
+
     def a_star(self, mapdata, start, goal):
         ### REQUIRED CREDIT
         rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
 
 
-    
+
     @staticmethod
     def optimize_path(path):
         """
@@ -196,7 +230,7 @@ class PathPlanner:
         ### EXTRA CREDIT
         rospy.loginfo("Optimizing path")
 
-        
+
 
     def path_to_message(self, mapdata, path):
         """
@@ -208,12 +242,12 @@ class PathPlanner:
         rospy.loginfo("Returning a Path message")
 
 
-        
+
     def plan_path(self, msg):
         """
         Plans a path between the start and goal locations in the requested.
         Internally uses A* to plan the optimal path.
-        :param req 
+        :param req
         """
         ## Request the map
         ## In case of error, return an empty path
@@ -232,7 +266,7 @@ class PathPlanner:
         return self.path_to_message(mapdata, waypoints)
 
 
-    
+
     def run(self):
         """
         Runs the node until Ctrl-C is pressed.
@@ -240,6 +274,6 @@ class PathPlanner:
         rospy.spin()
 
 
-        
+
 if __name__ == '__main__':
     PathPlanner().run()
