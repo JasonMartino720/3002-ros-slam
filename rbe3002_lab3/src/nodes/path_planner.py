@@ -158,7 +158,12 @@ class PathPlanner:
         """
         ### REQUIRED CREDIT
         rospy.loginfo("Requesting the map")
-
+        try:
+            map_server = rospy.ServiceProxy('/map', GetMap)
+            temp_map = map_server()
+            return temp_map.map
+        except rospy.ServiceException, e:
+            return None
 
 
     def calc_cspace(self, mapdata, padding):
@@ -186,7 +191,7 @@ class PathPlanner:
                     paddedArray[self.grid_to_index(mapdata,y,x-1)] = 100
 
         gridCellsList = []
-        
+
         for y in range(mapdata.height):
             for x in range(mapdata.width):
                 ## Inflate the obstacles where necessary
