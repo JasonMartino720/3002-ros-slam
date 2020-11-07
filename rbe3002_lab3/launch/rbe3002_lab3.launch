@@ -4,5 +4,6 @@
       <node pkg="rbe3002_lab3" type="lab3.py" name="lab3" />
       <node pkg="rbe3002_lab3" type="path_planner.py" name="path_planner" />
       <node pkg="rbe3002_lab3" type="priority_queue.py" name="priority_queue" />
+      <node pkg="rbe3002_lab3" type="simple_map.yaml" name="simple_map" />
 
   </launch>
