@@ -4,9 +4,8 @@ import math
 import rospy
 import sys
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import PoseStamped
-from geometry_msgs.msg import Twist
-from geometry_msgs.msg import Vector3
+from nav_msgs.srv import GetMap, GetPlan
+from geometry_msgs.msg import PoseStamped, Twist, Vector3
 from tf.transformations import euler_from_quaternion
 
 
@@ -21,8 +20,8 @@ class Lab3:
         self.pth = 0
 
         ### REQUIRED CREDIT
-        ### Initialize node, name it 'lab2'
-        rospy.init_node('lab2', anonymous=True)
+        ### Initialize node, name it 'lab3'
+        rospy.init_node('lab3', anonymous=True)
         ### Tell ROS that this node publishes Twist messages on the '/cmd_vel' topic
         self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 
@@ -37,7 +36,7 @@ class Lab3:
     def test(self, msg):
         rospy.loginfo("Requesting the path")
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
-        return = path_planner()
+        plan = path_planner()
 
     def send_speed(self, linear_speed, angular_speed):
         """
@@ -250,4 +249,4 @@ def solve_arc_omega(curr_x,curr_y,curr_theta,goal_x,goal_y):
     return omega
 
 if __name__ == '__main__':
-    Lab2().run()
+    Lab3().run()

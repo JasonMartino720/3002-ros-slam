@@ -21,7 +21,7 @@ class PathPlanner:
         rospy.init_node("path_planner")
         ## Create a new service called "plan_path" that accepts messages of
         ## type GetPlan and calls self.plan_path() when a message is received
-        self.pathService = rospy.Service('plan_path',GetPlan,self.path_plan)
+        self.pathService = rospy.Service('plan_path',GetPlan,self.plan_path)
         ## Create a publisher for the C-space (the enlarged occupancy grid)
         ## The topic is "/path_planner/cspace", the message type is GridCells
         self.pubCspace = rospy.Publisher("/path_planner/cspace",GridCells, queue_size = 10)
@@ -44,7 +44,7 @@ class PathPlanner:
         :param y [int] The cell Y coordinate.
         :return  [int] The index.
         """
-        return y * mapdata.width + x
+        return y * mapdata.info.width + x
 
 
 
@@ -74,8 +74,8 @@ class PathPlanner:
         """
         world_point = Point()
 
-        world_point.x = (x + 0.5) * mapdata.resolution + mapdata.origin.position.x
-        world_point.y = (y + 0.5) * mapdata.resolution + mapdata.origin.position.y
+        world_point.x = (x + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.x
+        world_point.y = (y + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.y
 
     @staticmethod
     def world_to_grid(mapdata, wp):
@@ -86,8 +86,8 @@ class PathPlanner:
         :return        [(int,int)]     The cell position as a tuple.
         """
 
-        x = int((wp.x - mapdata.origin.position.x) / mapdata.resolution)
-        y = int((wp.y - mapdata.origin.position.y) / mapdata.resolution)
+        x = int((wp.x - mapdata.info.origin.position.x) / mapdata.info.resolution)
+        y = int((wp.y - mapdata.info.origin.position.y) / mapdata.info.resolution)
 
         grid_coord = (x, y)
 
@@ -160,7 +160,7 @@ class PathPlanner:
         rospy.loginfo("Requesting the map")
         try:
             map_server = rospy.ServiceProxy('static_map', GetMap)
-            return = map_server().map
+            return map_server().map
         except rospy.ServiceException, e:
             return None
 
@@ -180,19 +180,20 @@ class PathPlanner:
             paddedArray.append(i)
 
         ## Go through each cell in the occupancy grid
-        for y in range(mapdata.height):
-            for x in range(mapdata.width):
+        for y in range(mapdata.info.height):
+            for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
                 if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
-                    paddedArray[self.grid_to_index(mapdata,y+1,x)] = 100
-                    paddedArray[self.grid_to_index(mapdata,y-1,x)] = 100
-                    paddedArray[self.grid_to_index(mapdata,y,x+1)] = 100
-                    paddedArray[self.grid_to_index(mapdata,y,x-1)] = 100
+                    # paddedArray[self.grid_to_index(mapdata,y+1,x)] = 100
+                    # paddedArray[self.grid_to_index(mapdata,y-1,x)] = 100
+                    # paddedArray[self.grid_to_index(mapdata,y,x+1)] = 100
+                    # paddedArray[self.grid_to_index(mapdata,y,x-1)] = 100
+                    paddedArray[self.grid_to_index(mapdata, y, x)] = 100
 
         gridCellsList = []
 
-        for y in range(mapdata.height):
-            for x in range(mapdata.width):
+        for y in range(mapdata.info.height):
+            for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
                 if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
                     world_point = self.grid_to_world(mapdata,x,y)
@@ -207,8 +208,9 @@ class PathPlanner:
         self.pubCspace.publish(msg)
 
         ## Return the C-space
-        for i, cellValue in enumerate(paddedArray):
-            mapdata.data[i] = cellValue
+        # for i, cellValue in enumerate(paddedArray):
+        #     mapdata.data[i] = cellValue
+        mapdata.data = paddedArray
 
         return mapdata
 
@@ -244,7 +246,7 @@ class PathPlanner:
         """
         ### REQUIRED CREDIT
         rospy.loginfo("Returning a Path message")
-
+        return Path()
 
 
     def plan_path(self, msg):
@@ -267,8 +269,13 @@ class PathPlanner:
         # ## Optimize waypoints
         # waypoints = PathPlanner.optimize_path(path)
         # ## Return a Path message
-        # return self.path_to_message(mapdata, waypoints)
-
+        returnObj = GetPlan()
+        waypoints = 0
+        returnObj.plan = self.path_to_message(mapdata, waypoints)
+        returnObj.start = PoseStamped()
+        returnObj.goal = PoseStamped()
+        returnObj.tolerance = 0.1
+        return returnObj.plan
 
 
 
