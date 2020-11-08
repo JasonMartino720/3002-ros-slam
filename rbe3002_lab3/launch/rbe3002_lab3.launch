@@ -1,9 +1,12 @@
   <launch>
+
       <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_empty_world.launch" />
       <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_gazebo_rviz.launch" />
-      <node pkg="rbe3002_lab3" type="lab3.py" name="lab3" />
+      <arg name="map_file" default="$(find rbe3002_lab3)maps/simple_map.yaml" />
+      <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" />
+
       <node pkg="rbe3002_lab3" type="path_planner.py" name="path_planner" />
-      <node pkg="rbe3002_lab3" type="priority_queue.py" name="priority_queue" />
-      <node pkg="rbe3002_lab3" type="simple_map.yaml" name="simple_map" />
+      <!-- node pkg="rbe3002_lab3" type="priority_queue.py" name="priority_queue" / -->
+	    <node pkg="rbe3002_lab3" type="lab3.py" name="lab3" />
 
   </launch>

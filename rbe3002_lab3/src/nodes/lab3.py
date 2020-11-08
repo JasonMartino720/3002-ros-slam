@@ -144,6 +144,7 @@ class Lab3:
         """
         Drives to a given position in an arc.
         :param msg [PoseStamped] The target pose.
+        """
 
         TOLERANCE = 0.1 #meters
 
