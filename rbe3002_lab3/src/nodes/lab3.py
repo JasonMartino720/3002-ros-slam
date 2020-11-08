@@ -10,7 +10,7 @@ from geometry_msgs.msg import Vector3
 from tf.transformations import euler_from_quaternion
 
 
-class Lab2:
+class Lab3:
 
     def __init__(self):
         """
@@ -32,8 +32,12 @@ class Lab2:
 
         ### Tell ROS that this node subscribes to PoseStamped messages on the '/move_base_simple/goal' topic
         ### When a message is received, call self.go_to
-        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.go_to)
+        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.test)
 
+    def test(self, msg):
+        rospy.loginfo("Requesting the path")
+        path_planner = rospy.ServiceProxy('plan_path', GetPlan)
+        return = path_planner()
 
     def send_speed(self, linear_speed, angular_speed):
         """

@@ -21,7 +21,7 @@ class PathPlanner:
         rospy.init_node("path_planner")
         ## Create a new service called "plan_path" that accepts messages of
         ## type GetPlan and calls self.plan_path() when a message is received
-        # TODO
+        self.pathService = rospy.Service('plan_path',GetPlan,self.path_plan)
         ## Create a publisher for the C-space (the enlarged occupancy grid)
         ## The topic is "/path_planner/cspace", the message type is GridCells
         self.pubCspace = rospy.Publisher("/path_planner/cspace",GridCells, queue_size = 10)
@@ -159,9 +159,8 @@ class PathPlanner:
         ### REQUIRED CREDIT
         rospy.loginfo("Requesting the map")
         try:
-            map_server = rospy.ServiceProxy('/map', GetMap)
-            temp_map = map_server()
-            return temp_map.map
+            map_server = rospy.ServiceProxy('static_map', GetMap)
+            return = map_server().map
         except rospy.ServiceException, e:
             return None
 
@@ -257,18 +256,19 @@ class PathPlanner:
         ## Request the map
         ## In case of error, return an empty path
         mapdata = PathPlanner.request_map()
-        if mapdata is None:
-            return Path()
-        ## Calculate the C-space and publish it
+        # if mapdata is None:
+        #     return Path()
+        # ## Calculate the C-space and publish it
         cspacedata = self.calc_cspace(mapdata, 1)
-        ## Execute A*
-        start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
-        goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
-        path  = self.a_star(cspacedata, start, goal)
-        ## Optimize waypoints
-        waypoints = PathPlanner.optimize_path(path)
-        ## Return a Path message
-        return self.path_to_message(mapdata, waypoints)
+        # ## Execute A*
+        # start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
+        # goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
+        # path  = self.a_star(cspacedata, start, goal)
+        # ## Optimize waypoints
+        # waypoints = PathPlanner.optimize_path(path)
+        # ## Return a Path message
+        # return self.path_to_message(mapdata, waypoints)
+
 
 
 
