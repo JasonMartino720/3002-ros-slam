@@ -148,13 +148,13 @@ class PathPlanner:
         if x != 0:
             if is_cell_walkable(mapdata,x-1,y):
                 returnList.append(x-1,y)
-        if x != mapdata.info.width-2:
+        if x != mapdata.info.width-1:
             if is_cell_walkable(mapdata,x+1,y):
                 returnList.append(x+1,y)
         if y != 0:
             if is_cell_walkable(mapdata,x,y-1):
                 returnList.append(x,y-1)
-        if y != mapdata.info.width-2:
+        if y != mapdata.info.width-1:
             if is_cell_walkable(mapdata,x,y+1):
                 returnList.append(x,y+1)
 
