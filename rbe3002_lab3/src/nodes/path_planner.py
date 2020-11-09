@@ -115,17 +115,20 @@ class PathPlanner:
         :param y       [int]           The Y coordinate in the grid.
         :return        [boolean]       True if the cell is walkable, False otherwise
         """
+        walkable = False
 
         ### REQUIRED CREDIT
         "if the x and y coordinates are out of bounds"
         if  0 < x < mapdata.info.width and mapdata.info.width > y > 0:
             "if the data in the cell is less than 0.196(threshold of the free cell)"
             if mapdata.data[grid_to_index(mapdata, x, y)] < 0.196:
-                return True
+                walkable = True
             else:
-                return False
+                walkable = False
         else:
-            return False
+            walkable = False
+
+        return walkable
 
 
     @staticmethod
