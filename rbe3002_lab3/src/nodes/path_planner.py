@@ -58,8 +58,7 @@ class PathPlanner:
         :param y2 [int or float] Y coordinate of second point.
         :return   [float]        The distance.
         """
-        ### REQUIRED CREDIT
-        pass
+        return sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
 
 
 
@@ -138,8 +137,27 @@ class PathPlanner:
         :param y       [int]           The Y coordinate in the grid.
         :return        [[(int,int)]]   A list of walkable 4-neighbors.
         """
-        ### REQUIRED CREDIT
-        pass
+
+        if(x < 0 || x > mapdata.info.width-1 || y < 0 || y > mapdata.info.height-1):
+            raise ValueError("input cell is not within the bounds of the map")
+
+        returnList = []
+        if x != 0:
+            if is_cell_walkable(mapdata,x-1,y):
+                returnList.append(x-1,y)
+        if x != mapdata.info.width-2:
+            if is_cell_walkable(mapdata,x+1,y):
+                returnList.append(x+1,y)
+        if y != 0:
+            if is_cell_walkable(mapdata,x,y-1):
+                returnList.append(x,y-1)
+        if y != mapdata.info.width-2:
+            if is_cell_walkable(mapdata,x,y+1):
+                returnList.append(x,y+1)
+
+        return returnList
+
+
 
 
 
