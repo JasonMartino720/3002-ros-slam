@@ -119,17 +119,12 @@ class PathPlanner:
 
         ### REQUIRED CREDIT
         "if the x and y coordinates are out of bounds"
-        if  0 < x < mapdata.info.width and mapdata.info.width > y > 0:
+        if  0 <= x < mapdata.info.width-1 and mapdata.info.height-1 > y >= 0:
             "if the data in the cell is less than 0.196(threshold of the free cell)"
             if mapdata.data[grid_to_index(mapdata, x, y)] < 0.196:
-                walkable = True
-            else:
-                walkable = False
-        else:
-            walkable = False
-
-        return walkable
-
+                return True
+        return False
+        
 
     @staticmethod
     def neighbors_of_4(mapdata, x, y):
