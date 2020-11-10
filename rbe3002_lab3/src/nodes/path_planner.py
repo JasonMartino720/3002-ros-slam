@@ -124,7 +124,7 @@ class PathPlanner:
             if mapdata.data[grid_to_index(mapdata, x, y)] < 0.196:
                 return True
         return False
-        
+
 
     @staticmethod
     def neighbors_of_4(mapdata, x, y):
@@ -140,6 +140,7 @@ class PathPlanner:
             raise ValueError("input cell is not within the bounds of the map")
 
         returnList = []
+
         if x != 0:
             if is_cell_walkable(mapdata,x-1,y):
                 returnList.append(x-1,y)
@@ -149,7 +150,7 @@ class PathPlanner:
         if y != 0:
             if is_cell_walkable(mapdata,x,y-1):
                 returnList.append(x,y-1)
-        if y != mapdata.info.width-1:
+        if y != mapdata.info.height-1:
             if is_cell_walkable(mapdata,x,y+1):
                 returnList.append(x,y+1)
 
@@ -168,9 +169,23 @@ class PathPlanner:
         :param y       [int]           The Y coordinate in the grid.
         :return        [[(int,int)]]   A list of walkable 8-neighbors.
         """
-        ### REQUIRED CREDIT
-        pass
+        #This already checks for in-boundness
+        returnList = neighbors_of_4(mapdata, x, y)
 
+        if x != 0 and y != 0:
+            if is_cell_walkable(mapdata,x-1,y-1):
+                returnList.append(x-1,y-1)
+        if x != mapdata.info.width-1 and y != 0:
+            if is_cell_walkable(mapdata,x+1,y-1):
+                returnList.append(x+1,y-1)
+        if y != mapdata.info.height-1 and x != 0:
+            if is_cell_walkable(mapdata,x-1,y+1):
+                returnList.append(x-1,y-1)
+        if x != mapdata.info.width-1 and y != mapdata.info.height-1:
+            if is_cell_walkable(mapdata,x+1,y+1):
+                returnList.append(x+1,y+1)
+
+        return returnList
 
 
     @staticmethod
