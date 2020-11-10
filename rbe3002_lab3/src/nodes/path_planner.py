@@ -5,6 +5,7 @@ import rospy
 from nav_msgs.srv import GetPlan, GetMap
 from nav_msgs.msg import GridCells, OccupancyGrid, Path
 from geometry_msgs.msg import Point, Pose, PoseStamped
+from tf_conversions.transformations import quaternion_from_euler
 
 
 
@@ -100,7 +101,21 @@ class PathPlanner:
         :return        [[PoseStamped]] The path as a list of PoseStamped (world coordinates).
         """
         ### REQUIRED CREDIT
-        pass
+        rospy.loginfo("converting path into a list of PoseStamped")
+        posestamp_list = []
+        yaw = 0
+
+        #still need to calculate yaw
+
+        for i in range(len(path)):
+            single_pose = PoseStamped()
+            pos = self.grid_to_world(mapdata, path[i][0], path[i][1])
+            q = quaternion_from_euler(0, 0, yaw)
+            orient = Quaternion(q[0], q[1], q[2], q[3])
+            single_pose.pose.position = pos
+            single_pose.pose.orientation = orient
+            posestamp_list.append(single_pose)
+        return posestamp_list
 
 
 
@@ -124,7 +139,7 @@ class PathPlanner:
             if mapdata.data[grid_to_index(mapdata, x, y)] < 0.196:
                 return True
         return False
-        
+
 
     @staticmethod
     def neighbors_of_4(mapdata, x, y):
@@ -273,7 +288,7 @@ class PathPlanner:
         path_message = Path()
         pose_array = []
         yaw = 0;
-        for i in range(len(path))
+        for i in range(len(path)):
             pose_message = PoseStamped()
             point = self.grid_to_world(mapdata, path[i][0], path[i][1])
             #calc yaw using round(inverseTan(angle between i and i+1))
