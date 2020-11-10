@@ -119,17 +119,12 @@ class PathPlanner:
 
         ### REQUIRED CREDIT
         "if the x and y coordinates are out of bounds"
-        if  0 < x < mapdata.info.width and mapdata.info.width > y > 0:
+        if  0 <= x < mapdata.info.width-1 and mapdata.info.height-1 > y >= 0:
             "if the data in the cell is less than 0.196(threshold of the free cell)"
             if mapdata.data[grid_to_index(mapdata, x, y)] < 0.196:
-                walkable = True
-            else:
-                walkable = False
-        else:
-            walkable = False
-
-        return walkable
-
+                return True
+        return False
+        
 
     @staticmethod
     def neighbors_of_4(mapdata, x, y):
@@ -275,7 +270,21 @@ class PathPlanner:
         """
         ### REQUIRED CREDIT
         rospy.loginfo("Returning a Path message")
-        return Path()
+        path_message = Path()
+        pose_array = []
+        yaw = 0;
+        for i in range(len(path))
+            pose_message = PoseStamped()
+            point = self.grid_to_world(mapdata, path[i][0], path[i][1])
+            #calc yaw using round(inverseTan(angle between i and i+1))
+            q = quaternion_from_euler(0, 0, yaw)
+            orientation = Quaternion(q[0], q[1], q[2], q[3])
+            pose_message.pose.position = point
+            pose_message.pose.orientation = orientation
+            pose_array.append(pose_message)
+        path_message.poses = pose_array
+        return path_message
+
 
 
     def plan_path(self, msg):
