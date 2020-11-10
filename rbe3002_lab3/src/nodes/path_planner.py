@@ -108,7 +108,7 @@ class PathPlanner:
         posestamp_list = []
         yaw = 0
         for i in range(len(path)):
-            yaw = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
+            yaw = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
             single_pose = PoseStamped()
             pos = PathPlanner.grid_to_world(mapdata, path[i][0], path[i][1])
             q = quaternion_from_euler(0, 0, yaw)
@@ -297,9 +297,9 @@ class PathPlanner:
 
         pathCopy = path
 
-        for i in range(1, len(path)-1)
-            curr_heading = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
-            last_heading = round_to_45(degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
+        for i in range(1, len(path)-1):
+            curr_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
+            last_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
 
             if curr_heading == last_heading
                 pathCopy.pop(i)
@@ -324,7 +324,7 @@ class PathPlanner:
         ### REQUIRED CREDIT
         rospy.loginfo("Returning a Path message")
         path_message = Path()
-        path_message.poses = path_to_poses(mapdata, path)
+        path_message.poses = PathPlanner.path_to_poses(mapdata, path)
         return path_message
 
     def plan_path(self, msg):
