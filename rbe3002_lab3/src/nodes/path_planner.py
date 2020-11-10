@@ -139,8 +139,7 @@ class PathPlanner:
         "if the x and y coordinates are out of bounds"
         if  0 <= x < mapdata.info.width-1 and mapdata.info.height-1 > y >= 0:
             "if the data in the cell is less than 0.196(threshold of the free cell)"
-            if mapdata.data[self.
-            self.grid_to_index(mapdata, x, y)] < 0.196:
+            if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] < 0.196:
                 return True
         return False
 
