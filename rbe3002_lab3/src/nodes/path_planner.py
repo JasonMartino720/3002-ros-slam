@@ -294,17 +294,19 @@ class PathPlanner:
         """
         ### EXTRA CREDIT
         rospy.loginfo("Optimizing path")
-        curr_header = 0
-        last_header = 0
+        curr_heading = 0
+        last_heading = 0
+
+        pathCopy = path
 
         for i in range(1, len(path)-1)
-            curr_header = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
-            last_header = round_to_45(degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
+            curr_heading = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
+            last_heading = round_to_45(degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
 
-            if curr_header == last_header
-                path.pop(i)
+            if curr_heading == last_heading
+                pathCopy.pop(i)
 
-        return path
+        return pathCopy
 
     def round_to_45(value):
         """
@@ -323,22 +325,8 @@ class PathPlanner:
         ### REQUIRED CREDIT
         rospy.loginfo("Returning a Path message")
         path_message = Path()
-        pose_array = []
-        yaw = 0;
-        for i in range(len(path)):
-            pose_message = PoseStamped()
-            point = self.grid_to_world(mapdata, path[i][0], path[i][1])
-            #calc yaw using round(inverseTan(angle between i and i+1))
-            yaw = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
-            q = quaternion_from_euler(0, 0, yaw)
-            orientation = Quaternion(q[0], q[1], q[2], q[3])
-            pose_message.pose.position = point
-            pose_message.pose.orientation = orientation
-            pose_array.append(pose_message)
-        path_message.poses = pose_array
+        path_message.poses = path_to_poses(mapdata, path)
         return path_message
-
-
 
     def plan_path(self, msg):
         """
