@@ -4,7 +4,7 @@ import math
 import rospy
 from nav_msgs.srv import GetPlan, GetMap
 from nav_msgs.msg import GridCells, OccupancyGrid, Path
-from geometry_msgs.msg import Point, Pose, PoseStamped
+from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
 from tf_conversions.transformations import quaternion_from_euler
 
 
@@ -59,7 +59,7 @@ class PathPlanner:
         :param y2 [int or float] Y coordinate of second point.
         :return   [float]        The distance.
         """
-        return sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
+        return math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
 
 
 
@@ -110,8 +110,7 @@ class PathPlanner:
         for i in range(len(path)):
             yaw = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
             single_pose = PoseStamped()
-            pos = self.grid_to_world(mapdata, path[i][0], path[i][1])
-            # q is the tf quaternion
+            pos = PathPlanner.grid_to_world(mapdata, path[i][0], path[i][1])
             q = quaternion_from_euler(0, 0, yaw)
             # going back to ros quaternion
             orient = Quaternion(q[0], q[1], q[2], q[3])
@@ -154,22 +153,22 @@ class PathPlanner:
         :return        [[(int,int)]]   A list of walkable 4-neighbors.
         """
 
-        if(x < 0 || x > mapdata.info.width-1 || y < 0 || y > mapdata.info.height-1):
+        if(x < 0 | x > mapdata.info.width-1 | y < 0 | y > mapdata.info.height-1):
             raise ValueError("input cell is not within the bounds of the map")
 
         returnList = []
 
         if x != 0:
-            if is_cell_walkable(mapdata,x-1,y):
+            if PathPlanner.is_cell_walkable(mapdata,x-1,y):
                 returnList.append(x-1,y)
         if x != mapdata.info.width-1:
-            if is_cell_walkable(mapdata,x+1,y):
+            if PathPlanner.is_cell_walkable(mapdata,x+1,y):
                 returnList.append(x+1,y)
         if y != 0:
-            if is_cell_walkable(mapdata,x,y-1):
+            if PathPlanner.is_cell_walkable(mapdata,x,y-1):
                 returnList.append(x,y-1)
         if y != mapdata.info.height-1:
-            if is_cell_walkable(mapdata,x,y+1):
+            if PathPlanner.is_cell_walkable(mapdata,x,y+1):
                 returnList.append(x,y+1)
 
         return returnList
@@ -188,19 +187,19 @@ class PathPlanner:
         :return        [[(int,int)]]   A list of walkable 8-neighbors.
         """
         #This already checks for in-boundness
-        returnList = neighbors_of_4(mapdata, x, y)
+        returnList = PathPlanner.neighbors_of_4(mapdata, x, y)
 
         if x != 0 and y != 0:
-            if is_cell_walkable(mapdata,x-1,y-1):
+            if PathPlanner.is_cell_walkable(mapdata,x-1,y-1):
                 returnList.append(x-1,y-1)
         if x != mapdata.info.width-1 and y != 0:
-            if is_cell_walkable(mapdata,x+1,y-1):
+            if PathPlanner.is_cell_walkable(mapdata,x+1,y-1):
                 returnList.append(x+1,y-1)
         if y != mapdata.info.height-1 and x != 0:
-            if is_cell_walkable(mapdata,x-1,y+1):
+            if PathPlanner.is_cell_walkable(mapdata,x-1,y+1):
                 returnList.append(x-1,y-1)
         if x != mapdata.info.width-1 and y != mapdata.info.height-1:
-            if is_cell_walkable(mapdata,x+1,y+1):
+            if PathPlanner.is_cell_walkable(mapdata,x+1,y+1):
                 returnList.append(x+1,y+1)
 
         return returnList
@@ -307,12 +306,13 @@ class PathPlanner:
 
         return pathCopy
 
+    @staticmethod
     def round_to_45(value):
         """
         Round to the nearest 45 degree increment
         param value [double?] The value to be rounded in degrees
         """
-    return round(value / 45.0) * 45.0
+        return round(value / 45.0) * 45.0
 
 
     def path_to_message(self, mapdata, path):
