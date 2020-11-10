@@ -251,8 +251,8 @@ class PathPlanner:
                 ## Inflate the obstacles where necessary
                 if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
 
-                    for y2 in range(mapdata.info.height-padding,mapdata.info.height-padding):
-                        for x2 in range(mapdata.info.width-padding,mapdata.info.width-padding):
+                    for y2 in range(mapdata.info.height-padding,mapdata.info.height+padding):
+                        for x2 in range(mapdata.info.width-padding,mapdata.info.width+padding):
                             x3, y3 = self.force_inbound(mapdata,x2,y2)
                             paddedArray[self.grid_to_index(mapdata,x3,y3)] = 100
 
@@ -273,9 +273,6 @@ class PathPlanner:
         msg.header.frame_id = "map"
         self.pubCspace.publish(msg)
 
-        ## Return the C-space
-        # for i, cellValue in enumerate(paddedArray):
-        #     mapdata.data[i] = cellValue
         mapdata.data = paddedArray
 
         return mapdata
