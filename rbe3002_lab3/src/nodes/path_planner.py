@@ -294,7 +294,24 @@ class PathPlanner:
         """
         ### EXTRA CREDIT
         rospy.loginfo("Optimizing path")
+        curr_header = 0
+        last_header = 0
 
+        for i in range(1, len(path)-1)
+            curr_header = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
+            last_header = round_to_45(degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
+
+            if curr_header == last_header
+                path.pop(i)
+
+        return path
+
+    def round_to_45(value):
+        """
+        Round to the nearest 45 degree increment
+        param value [double?] The value to be rounded
+        """
+    return round(value / 45) * 45
 
 
     def path_to_message(self, mapdata, path):
@@ -312,6 +329,7 @@ class PathPlanner:
             pose_message = PoseStamped()
             point = self.grid_to_world(mapdata, path[i][0], path[i][1])
             #calc yaw using round(inverseTan(angle between i and i+1))
+            yaw = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
             q = quaternion_from_euler(0, 0, yaw)
             orientation = Quaternion(q[0], q[1], q[2], q[3])
             pose_message.pose.position = point
