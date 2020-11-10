@@ -77,6 +77,8 @@ class PathPlanner:
         world_point.x = (x + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.x
         world_point.y = (y + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.y
 
+        return world_point
+
     @staticmethod
     def world_to_grid(mapdata, wp):
         """
@@ -91,6 +93,7 @@ class PathPlanner:
 
         grid_coord = (x, y)
 
+        return grid_coord
 
     @staticmethod
     def path_to_poses(mapdata, path):
@@ -104,13 +107,13 @@ class PathPlanner:
         rospy.loginfo("converting path into a list of PoseStamped")
         posestamp_list = []
         yaw = 0
-
-        #still need to calculate yaw
-
         for i in range(len(path)):
+            yaw = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
             single_pose = PoseStamped()
             pos = self.grid_to_world(mapdata, path[i][0], path[i][1])
+            # q is the tf quaternion
             q = quaternion_from_euler(0, 0, yaw)
+            # going back to ros quaternion
             orient = Quaternion(q[0], q[1], q[2], q[3])
             single_pose.pose.position = pos
             single_pose.pose.orientation = orient
