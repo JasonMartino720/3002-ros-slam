@@ -312,9 +312,9 @@ class PathPlanner:
     def round_to_45(value):
         """
         Round to the nearest 45 degree increment
-        param value [double?] The value to be rounded
+        param value [double?] The value to be rounded in degrees
         """
-    return round(value / 45) * 45
+    return round(value / 45.0) * 45.0
 
 
     def path_to_message(self, mapdata, path):
