@@ -136,7 +136,8 @@ class PathPlanner:
         "if the x and y coordinates are out of bounds"
         if  0 <= x < mapdata.info.width-1 and mapdata.info.height-1 > y >= 0:
             "if the data in the cell is less than 0.196(threshold of the free cell)"
-            if mapdata.data[grid_to_index(mapdata, x, y)] < 0.196:
+            if mapdata.data[self.
+            self.grid_to_index(mapdata, x, y)] < 0.196:
                 return True
         return False
 
@@ -155,16 +156,17 @@ class PathPlanner:
             raise ValueError("input cell is not within the bounds of the map")
 
         returnList = []
+
         if x != 0:
             if is_cell_walkable(mapdata,x-1,y):
                 returnList.append(x-1,y)
-        if x != mapdata.info.width-2:
+        if x != mapdata.info.width-1:
             if is_cell_walkable(mapdata,x+1,y):
                 returnList.append(x+1,y)
         if y != 0:
             if is_cell_walkable(mapdata,x,y-1):
                 returnList.append(x,y-1)
-        if y != mapdata.info.width-2:
+        if y != mapdata.info.height-1:
             if is_cell_walkable(mapdata,x,y+1):
                 returnList.append(x,y+1)
 
@@ -183,9 +185,23 @@ class PathPlanner:
         :param y       [int]           The Y coordinate in the grid.
         :return        [[(int,int)]]   A list of walkable 8-neighbors.
         """
-        ### REQUIRED CREDIT
-        pass
+        #This already checks for in-boundness
+        returnList = neighbors_of_4(mapdata, x, y)
 
+        if x != 0 and y != 0:
+            if is_cell_walkable(mapdata,x-1,y-1):
+                returnList.append(x-1,y-1)
+        if x != mapdata.info.width-1 and y != 0:
+            if is_cell_walkable(mapdata,x+1,y-1):
+                returnList.append(x+1,y-1)
+        if y != mapdata.info.height-1 and x != 0:
+            if is_cell_walkable(mapdata,x-1,y+1):
+                returnList.append(x-1,y-1)
+        if x != mapdata.info.width-1 and y != mapdata.info.height-1:
+            if is_cell_walkable(mapdata,x+1,y+1):
+                returnList.append(x+1,y+1)
+
+        return returnList
 
 
     @staticmethod
@@ -202,7 +218,16 @@ class PathPlanner:
             return map_server().map
         except rospy.ServiceException, e:
             return None
+    def force_inbound(self,mapdata,curr_x,curr_y):
+        maxY = mapdata.info.height-1
+        maxX = mapdata.info.width-1
+        minX = 0
+        minY = 0
 
+        newX = max(minX,min(curr_x, maxX))
+        newY = max(minY,min(curr_y, maxY))
+
+        return newX, newY
 
     def calc_cspace(self, mapdata, padding):
         """
@@ -214,27 +239,26 @@ class PathPlanner:
         """
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
-        paddedArray = []
-        for i in mapdata.data:
-            paddedArray.append(i)
+
+        paddedArray = mapdata.data
 
         ## Go through each cell in the occupancy grid
         for y in range(mapdata.info.height):
             for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
                 if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
-                    # paddedArray[self.grid_to_index(mapdata,y+1,x)] = 100
-                    # paddedArray[self.grid_to_index(mapdata,y-1,x)] = 100
-                    # paddedArray[self.grid_to_index(mapdata,y,x+1)] = 100
-                    # paddedArray[self.grid_to_index(mapdata,y,x-1)] = 100
-                    paddedArray[self.grid_to_index(mapdata, y, x)] = 100
+
+                    for y2 in range(mapdata.info.height-padding,mapdata.info.height-padding):
+                        for x2 in range(mapdata.info.width-padding,mapdata.info.width-padding):
+                            x3, y3 = self.force_inbound(mapdata,x2,y2)
+                            paddedArray[self.grid_to_index(mapdata,x3,y3)] = 100
 
         gridCellsList = []
 
         for y in range(mapdata.info.height):
             for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
+                if paddedArray[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
                     world_point = self.grid_to_world(mapdata,x,y)
                     gridCellsList.append(world_point)
 
@@ -252,10 +276,6 @@ class PathPlanner:
         mapdata.data = paddedArray
 
         return mapdata
-
-
-        # TODO
-        pass
 
 
 
