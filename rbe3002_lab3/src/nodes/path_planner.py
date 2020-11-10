@@ -77,6 +77,8 @@ class PathPlanner:
         world_point.x = (x + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.x
         world_point.y = (y + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.y
 
+        return world_point
+
     @staticmethod
     def world_to_grid(mapdata, wp):
         """
@@ -91,6 +93,7 @@ class PathPlanner:
 
         grid_coord = (x, y)
 
+        return grid_coord
 
     @staticmethod
     def path_to_poses(mapdata, path):
@@ -104,13 +107,12 @@ class PathPlanner:
         rospy.loginfo("converting path into a list of PoseStamped")
         posestamp_list = []
         yaw = 0
-
-        #still need to calculate yaw
-
         for i in range(len(path)):
+            yaw = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
             single_pose = PoseStamped()
             pos = PathPlanner.grid_to_world(mapdata, path[i][0], path[i][1])
             q = quaternion_from_euler(0, 0, yaw)
+            # going back to ros quaternion
             orient = Quaternion(q[0], q[1], q[2], q[3])
             single_pose.pose.position = pos
             single_pose.pose.orientation = orient
@@ -248,8 +250,8 @@ class PathPlanner:
                 ## Inflate the obstacles where necessary
                 if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
 
-                    for y2 in range(mapdata.info.height-padding,mapdata.info.height-padding):
-                        for x2 in range(mapdata.info.width-padding,mapdata.info.width-padding):
+                    for y2 in range(mapdata.info.height-padding,mapdata.info.height+padding):
+                        for x2 in range(mapdata.info.width-padding,mapdata.info.width+padding):
                             x3, y3 = self.force_inbound(mapdata,x2,y2)
                             paddedArray[self.grid_to_index(mapdata,x3,y3)] = 100
 
@@ -270,9 +272,6 @@ class PathPlanner:
         msg.header.frame_id = "map"
         self.pubCspace.publish(msg)
 
-        ## Return the C-space
-        # for i, cellValue in enumerate(paddedArray):
-        #     mapdata.data[i] = cellValue
         mapdata.data = paddedArray
 
         return mapdata
@@ -294,17 +293,19 @@ class PathPlanner:
         """
         ### EXTRA CREDIT
         rospy.loginfo("Optimizing path")
-        curr_header = 0
-        last_header = 0
+        curr_heading = 0
+        last_heading = 0
+
+        pathCopy = path
 
         for i in range(1, len(path)-1)
-            curr_header = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
-            last_header = round_to_45(degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
+            curr_heading = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
+            last_heading = round_to_45(degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
 
-            if curr_header == last_header
-                path.pop(i)
+            if curr_heading == last_heading
+                pathCopy.pop(i)
 
-        return path
+        return pathCopy
 
     @staticmethod
     def round_to_45(value):
@@ -324,22 +325,8 @@ class PathPlanner:
         ### REQUIRED CREDIT
         rospy.loginfo("Returning a Path message")
         path_message = Path()
-        pose_array = []
-        yaw = 0
-        for i in range(len(path)):
-            pose_message = PoseStamped()
-            point = self.grid_to_world(mapdata, path[i][0], path[i][1])
-            #calc yaw using round(inverseTan(angle between i and i+1))
-            yaw = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
-            q = quaternion_from_euler(0, 0, yaw)
-            orientation = Quaternion(q[0], q[1], q[2], q[3])
-            pose_message.pose.position = point
-            pose_message.pose.orientation = orientation
-            pose_array.append(pose_message)
-        path_message.poses = pose_array
+        path_message.poses = path_to_poses(mapdata, path)
         return path_message
-
-
 
     def plan_path(self, msg):
         """
