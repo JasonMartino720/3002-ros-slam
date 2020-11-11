@@ -5,8 +5,7 @@ import rospy
 from nav_msgs.srv import GetPlan, GetMap
 from nav_msgs.msg import GridCells, OccupancyGrid, Path
 from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
-from tf_conversions.transformations import quaternion_from_euler
-
+from tf_conversions.posemath import transformations
 
 class PathPlanner:
     def __init__(self):
@@ -101,7 +100,7 @@ class PathPlanner:
                 math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
             single_pose = PoseStamped()
             pos = PathPlanner.grid_to_world(mapdata, path[i][0], path[i][1])
-            q = quaternion_from_euler(0, 0, yaw)
+            q = transformations.quaternion_from_euler(0, 0, yaw)
             # going back to ros quaternion
             orient = Quaternion(q[0], q[1], q[2], q[3])
             single_pose.pose.position = pos
