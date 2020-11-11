@@ -95,7 +95,7 @@ class PathPlanner:
         ### REQUIRED CREDIT
         rospy.loginfo("converting path into a list of PoseStamped")
         posestamp_list = []
-        for i in range(len(path)):
+        for i in range(len(path)-1):
             yaw = PathPlanner.round_to_45(
                 math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
             single_pose = PoseStamped()
@@ -201,7 +201,8 @@ class PathPlanner:
         except rospy.ServiceException, e:
             return None
 
-    def force_inbound(self, mapdata, curr_x, curr_y):
+    @staticmethod
+    def force_inbound(mapdata, curr_x, curr_y):
         maxY = mapdata.info.height - 1
         maxX = mapdata.info.width - 1
         minX = 0
@@ -223,7 +224,7 @@ class PathPlanner:
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
 
-        paddedArray = mapdata.data
+        paddedArray = list(mapdata.data)
 
         ## Go through each cell in the occupancy grid
         for y in range(mapdata.info.height):
@@ -235,7 +236,7 @@ class PathPlanner:
                         for x2 in range(mapdata.info.width - padding, mapdata.info.width + padding):
                             x3, y3 = PathPlanner.force_inbound(mapdata, x2, y2)
                             paddedArray[self.grid_to_index(mapdata, x3, y3)] = 100
-
+        paddedArray = tuple(paddedArray)
         gridCellsList = []
 
         for y in range(mapdata.info.height):
@@ -294,7 +295,8 @@ class PathPlanner:
         """
         return round(value / 45.0) * 45.0
 
-    def path_to_message(self, mapdata, path):
+    @staticmethod
+    def path_to_message(mapdata, path):
         """
         Takes a path on the grid and returns a Path message.
         :param path [[(int,int)]] The path on the grid (a list of tuples)
@@ -327,7 +329,7 @@ class PathPlanner:
         # waypoints = PathPlanner.optimize_path(path)
         # ## Return a Path message
         returnObj = GetPlan()
-        waypoints = 0
+        waypoints = [(0,1),(0,2)]
         returnObj.plan = PathPlanner.path_to_message(mapdata, waypoints)
         returnObj.start = PoseStamped()
         returnObj.goal = PoseStamped()
