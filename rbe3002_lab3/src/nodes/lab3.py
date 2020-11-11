@@ -36,7 +36,13 @@ class Lab3:
     def test(self, msg):
         rospy.loginfo("Requesting the path")
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
-        plan = path_planner()
+        get_plan_obj = path_planner()
+        waypoints = get_plan_obj.plan.poses
+
+        for pose in range(waypoints):
+            self.go_to(pose)
+
+        rospy.loginfo("Path Completed!")
 
     def send_speed(self, linear_speed, angular_speed):
         """
