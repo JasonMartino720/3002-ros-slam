@@ -2,6 +2,7 @@
 
 import math
 import rospy
+import priority_queue
 from nav_msgs.srv import GetPlan, GetMap
 from nav_msgs.msg import GridCells, OccupancyGrid, Path
 from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
@@ -294,6 +295,30 @@ class PathPlanner:
         finalPath.reverse()
 
         return finalPath
+
+        frontier = priority_queue
+        frontier.put(start, 0)
+        came_from = {}
+        cost_so_far = {}
+        came_from[start] = None
+        cost_so_far[start] = 0
+
+        while not frontier.empty():
+            current = frontier.get()
+            if current == goal:
+                break
+
+            for next_n in graph.neighbours(current):
+                new_cost = cost_so_far[current] + graph.cost(current, next_n)
+                if next_n not in cost_so_far or new_cost < cost_so_far[next_n]:
+                    cost_so_far[next_n] = new_cost
+                    priority = new_cost + heuristic(goal, next_n)
+                    frontier.put(next_n, priority)
+                    came_from[next_n] = current
+
+
+
+
 
     @staticmethod
     def optimize_path(path):
