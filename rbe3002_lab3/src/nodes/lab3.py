@@ -5,8 +5,8 @@ import rospy
 import sys
 from nav_msgs.msg import Odometry
 from nav_msgs.srv import GetMap, GetPlan
-from geometry_msgs.msg import PoseStamped, Twist, Vector3
-from tf.transformations import euler_from_quaternion
+from geometry_msgs.msg import PoseStamped, Twist, Vector3, Point, Quaternion
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 
 class Lab3:
@@ -43,7 +43,7 @@ class Lab3:
         #Creating A PoseStamped msg of the current robot position for GetPlan.start
         curr_pos.pose.position = Point(self.px, self.py, 0)
         quat = quaternion_from_euler(0, 0, self.pth)
-        curr_pos.pose.orientation = Quaternion(quat[0] quat[1] quat[2] quat[3])
+        curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
         msg_to_send.start = curr_pos
         msg_to_send.goal = msg
         msg_to_send.tolerance = TOLERANCE
@@ -159,7 +159,7 @@ class Lab3:
         self.py = msg.pose.pose.position.y
         self.pth = orientation_to_yaw(msg.pose.pose.orientation)
 
-    def arc_to(self, position):
+    def arc_to(self, msg):
         """
         Drives to a given position in an arc.
         :param msg [PoseStamped] The target pose.
