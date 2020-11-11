@@ -6,6 +6,7 @@ from nav_msgs.srv import GetPlan, GetMap
 from nav_msgs.msg import GridCells, OccupancyGrid, Path
 from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
 from tf_conversions.posemath import transformations
+from priority_queue import PriorityQueue
 
 class PathPlanner:
     def __init__(self):
@@ -261,6 +262,36 @@ class PathPlanner:
     def a_star(self, mapdata, start, goal):
         ### REQUIRED CREDIT
         rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
+        frontier = PriorityQueue()
+        frontier.put(start, 0)
+
+        came_from = {}
+        came_from[start] = None
+        cost_so_far = {}
+        cost_so_far[start] = 0
+
+        while not frontier.empty():
+            current = frontier.get()
+
+            if current == goal:
+                break
+
+            for new in PathPlanner.neighbors_of_4(mapdata, current[0], current[1]):
+                new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],next[0],next[1])
+                if next not in cost_so_far or new_cost < cost_so_far[next]:
+                    cost_so_far[next] = new_cost
+                    priority = new_cost + PathPlanner.euclidean_distance(next[0],next[1],goal[0],goal[1])
+                    frontier.put(next,priority)
+                    came_from[next] = current
+
+        currPos = goal
+        finalPath = []
+        finalPath.append(goal)
+        while currPos != start:
+            currPos = came_from[currPos]
+            finalPath.append(currPos)
+
+        return finalPath
 
     @staticmethod
     def optimize_path(path):
