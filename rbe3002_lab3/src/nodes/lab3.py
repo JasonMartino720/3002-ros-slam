@@ -51,6 +51,7 @@ class Lab3:
         #Request Plan
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
         get_plan_obj = path_planner(curr_pos, msg, TOLERANCE)
+        waypoints = get_plan_obj.plan.poses 
 
         for pose in range(waypoints):
             self.go_to(pose)
