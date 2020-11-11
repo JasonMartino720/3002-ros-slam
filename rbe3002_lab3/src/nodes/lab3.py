@@ -52,9 +52,10 @@ class Lab3:
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
         get_plan_obj = path_planner(curr_pos, msg, TOLERANCE)
 
-        for points in get_plan_obj:
-            self.go_to(points)
+        for pose in range(waypoints):
+            self.go_to(pose)
 
+        rospy.loginfo("Path Completed!")
 
     def send_speed(self, linear_speed, angular_speed):
         """

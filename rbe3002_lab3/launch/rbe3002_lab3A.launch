@@ -1,0 +1,6 @@
+  <launch>
+      <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_empty_world.launch" />
+      <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_gazebo_rviz.launch" />
+	  	<node pkg="rqt_console" type="rqt_console" name="rqt_console" />
+			<node pkg="rqt_graph" type="rqt_graph" name="rqt_graph" />
+  </launch>
