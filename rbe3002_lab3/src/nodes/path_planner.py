@@ -277,13 +277,21 @@ class PathPlanner:
             if current == goal:
                 break
 
-            for new in PathPlanner.neighbors_of_4(mapdata, current[0], current[1]):
-                new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],next[0],next[1])
-                if next not in cost_so_far or new_cost < cost_so_far[next]:
-                    cost_so_far[next] = new_cost
-                    priority = new_cost + PathPlanner.euclidean_distance(next[0],next[1],goal[0],goal[1])
-                    frontier.put(next,priority)
-                    came_from[next] = current
+            for neighbour in PathPlanner.neighbors_of_4(mapdata, current[0], current[1]):
+                rospy.loginfo(str(type(cost_so_far[current])))
+                rospy.loginfo(str(cost_so_far[current]))
+                rospy.loginfo(str(current))
+                a = cost_so_far[current]
+                b = PathPlanner.euclidean_distance(current[0],current[1],neighbour[0],neighbour[1])
+                rospy.loginfo(a)
+                rospy.loginfo(b)
+                #new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],next[0],next[1])
+                new_cost = a + b
+                if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour]:
+                    cost_so_far[neighbour] = new_cost
+                    priority = new_cost + PathPlanner.euclidean_distance(neighbour[0],neighbour[1],goal[0],goal[1])
+                    frontier.put(neighbour,priority)
+                    came_from[neighbour] = current
 
         currPos = goal
         finalPath = []
