@@ -34,9 +34,27 @@ class Lab3:
         rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.test)
 
     def test(self, msg):
+        TOLERANCE = 0.1
         rospy.loginfo("Requesting the path")
+
+        curr_pos = PoseStamped()
+
+        #Creating A PoseStamped msg of the current robot position for GetPlan.start
+        curr_pos.pose.position = Point(self.px, self.py, 0)
+        quat = quaternion_from_euler(0, 0, self.pth)
+        curr_pos.pose.orientation = Quaternion(quat[0] quat[1] quat[2] quat[3])
+
+
+        #Pass msg, which is goal pos, to GetPlan.goal
+        msg_to_send.goal = msg
+
+        #Request Plan
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
-        plan = path_planner()
+        get_plan_obj = path_planner(curr_pos, msg, TOLERANCE)
+
+        for points in get_plan_obj:
+            self.go_to(points)
+
 
     def send_speed(self, linear_speed, angular_speed):
         """
@@ -125,7 +143,7 @@ class Lab3:
 
 
         self.rotate(angle_to_goal(self.px,self.py,goal.x,goal.y), ROTATION_SPEED)
-        self.drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
+        self.smooth_drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
 
     def update_odometry(self, msg):
