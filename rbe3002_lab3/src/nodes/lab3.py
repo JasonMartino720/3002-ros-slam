@@ -37,21 +37,21 @@ class Lab3:
         TOLERANCE = 0.1
         rospy.loginfo("Requesting the path")
 
+        msg_to_send = GetPlan()
         curr_pos = PoseStamped()
 
         #Creating A PoseStamped msg of the current robot position for GetPlan.start
         curr_pos.pose.position = Point(self.px, self.py, 0)
         quat = quaternion_from_euler(0, 0, self.pth)
         curr_pos.pose.orientation = Quaternion(quat[0] quat[1] quat[2] quat[3])
-
-
-        #Pass msg, which is goal pos, to GetPlan.goal
+        msg_to_send.start = curr_pos
         msg_to_send.goal = msg
+        msg_to_send.tolerance = TOLERANCE
 
         #Request Plan
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
-        get_plan_obj = path_planner(curr_pos, msg, TOLERANCE)
-        waypoints = get_plan_obj.plan.poses 
+        get_plan_obj = path_planner(msg_to_send)
+        waypoints = get_plan_obj.plan.poses
 
         for pose in range(waypoints):
             self.go_to(pose)
