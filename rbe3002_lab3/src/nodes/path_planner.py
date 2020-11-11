@@ -220,7 +220,9 @@ class PathPlanner:
             return map_server().map
         except rospy.ServiceException, e:
             return None
-    def force_inbound(self,mapdata,curr_x,curr_y):
+
+    @staticmethod
+    def force_inbound(mapdata,curr_x,curr_y):
         maxY = mapdata.info.height-1
         maxX = mapdata.info.width-1
         minX = 0
@@ -315,8 +317,8 @@ class PathPlanner:
         """
         return round(value / 45.0) * 45.0
 
-
-    def path_to_message(self, mapdata, path):
+    @staticmethod
+    def path_to_message(mapdata, path):
         """
         Takes a path on the grid and returns a Path message.
         :param path [[(int,int)]] The path on the grid (a list of tuples)
