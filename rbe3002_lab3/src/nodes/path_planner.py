@@ -108,7 +108,7 @@ class PathPlanner:
         posestamp_list = []
         yaw = 0
         for i in range(len(path)):
-            yaw = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
+            yaw = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
             single_pose = PoseStamped()
             pos = PathPlanner.grid_to_world(mapdata, path[i][0], path[i][1])
             q = quaternion_from_euler(0, 0, yaw)
@@ -138,8 +138,7 @@ class PathPlanner:
         "if the x and y coordinates are out of bounds"
         if  0 <= x < mapdata.info.width-1 and mapdata.info.height-1 > y >= 0:
             "if the data in the cell is less than 0.196(threshold of the free cell)"
-            if mapdata.data[self.
-            self.grid_to_index(mapdata, x, y)] < 0.196:
+            if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] < 0.196:
                 return True
         return False
 
@@ -161,16 +160,16 @@ class PathPlanner:
 
         if x != 0:
             if PathPlanner.is_cell_walkable(mapdata,x-1,y):
-                returnList.append(x-1,y)
+                returnList.append((x-1,y))
         if x != mapdata.info.width-1:
             if PathPlanner.is_cell_walkable(mapdata,x+1,y):
-                returnList.append(x+1,y)
+                returnList.append((x+1,y))
         if y != 0:
             if PathPlanner.is_cell_walkable(mapdata,x,y-1):
-                returnList.append(x,y-1)
+                returnList.append((x,y-1))
         if y != mapdata.info.height-1:
             if PathPlanner.is_cell_walkable(mapdata,x,y+1):
-                returnList.append(x,y+1)
+                returnList.append((x,y+1))
 
         return returnList
 
@@ -192,16 +191,16 @@ class PathPlanner:
 
         if x != 0 and y != 0:
             if PathPlanner.is_cell_walkable(mapdata,x-1,y-1):
-                returnList.append(x-1,y-1)
+                returnList.append((x-1,y-1))
         if x != mapdata.info.width-1 and y != 0:
             if PathPlanner.is_cell_walkable(mapdata,x+1,y-1):
-                returnList.append(x+1,y-1)
+                returnList.append((x+1,y-1))
         if y != mapdata.info.height-1 and x != 0:
             if PathPlanner.is_cell_walkable(mapdata,x-1,y+1):
-                returnList.append(x-1,y-1)
+                returnList.append((x-1,y-1))
         if x != mapdata.info.width-1 and y != mapdata.info.height-1:
             if PathPlanner.is_cell_walkable(mapdata,x+1,y+1):
-                returnList.append(x+1,y+1)
+                returnList.append((x+1,y+1))
 
         return returnList
 
@@ -250,11 +249,11 @@ class PathPlanner:
         for y in range(mapdata.info.height):
             for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
+                if mapdata.data[PathPlanner.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
 
                     for y2 in range(mapdata.info.height-padding,mapdata.info.height+padding):
                         for x2 in range(mapdata.info.width-padding,mapdata.info.width+padding):
-                            x3, y3 = self.force_inbound(mapdata,x2,y2)
+                            x3, y3 = PathPlanner.force_inbound(mapdata,x2,y2)
                             paddedArray[self.grid_to_index(mapdata,x3,y3)] = 100
 
         gridCellsList = []
@@ -262,8 +261,8 @@ class PathPlanner:
         for y in range(mapdata.info.height):
             for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if paddedArray[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
-                    world_point = self.grid_to_world(mapdata,x,y)
+                if paddedArray[PathPlanner.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
+                    world_point = PathPlanner.grid_to_world(mapdata,x,y)
                     gridCellsList.append(world_point)
 
         ## Create a GridCells message and publish it
@@ -300,9 +299,9 @@ class PathPlanner:
 
         pathCopy = path
 
-        for i in range(1, len(path)-1)
-            curr_heading = round_to_45(degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
-            last_heading = round_to_45(degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
+        for i in range(1, len(path)-1):
+            curr_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
+            last_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
 
             if curr_heading == last_heading
                 pathCopy.pop(i)
@@ -327,7 +326,7 @@ class PathPlanner:
         ### REQUIRED CREDIT
         rospy.loginfo("Returning a Path message")
         path_message = Path()
-        path_message.poses = path_to_poses(mapdata, path)
+        path_message.poses = PathPlanner.path_to_poses(mapdata, path)
         return path_message
 
     def plan_path(self, msg):
@@ -352,7 +351,7 @@ class PathPlanner:
         # ## Return a Path message
         returnObj = GetPlan()
         waypoints = 0
-        returnObj.plan = self.path_to_message(mapdata, waypoints)
+        returnObj.plan = PathPlanner.path_to_message(mapdata, waypoints)
         returnObj.start = PoseStamped()
         returnObj.goal = PoseStamped()
         returnObj.tolerance = 0.1
