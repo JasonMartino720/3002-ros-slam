@@ -1,10 +1,6 @@
   <launch>
-
-      <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_empty_world.launch" />
-      <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_gazebo_rviz.launch" />
       <node pkg="rbe3002_lab3" type="path_planner.py" name="path_planner" />
       <node pkg="rbe3002_lab3" type="lab3.py" name="lab3" />
-      
       <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher" args="0 0 0 0 0 0 /map /odom 100"/>
 
       <arg name="map_file" default="$(find rbe3002_lab3)maps/simple_map.yaml" />
