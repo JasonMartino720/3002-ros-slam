@@ -160,16 +160,16 @@ class PathPlanner:
 
         if x != 0:
             if PathPlanner.is_cell_walkable(mapdata,x-1,y):
-                returnList.append(x-1,y)
+                returnList.append((x-1,y))
         if x != mapdata.info.width-1:
             if PathPlanner.is_cell_walkable(mapdata,x+1,y):
-                returnList.append(x+1,y)
+                returnList.append((x+1,y))
         if y != 0:
             if PathPlanner.is_cell_walkable(mapdata,x,y-1):
-                returnList.append(x,y-1)
+                returnList.append((x,y-1))
         if y != mapdata.info.height-1:
             if PathPlanner.is_cell_walkable(mapdata,x,y+1):
-                returnList.append(x,y+1)
+                returnList.append((x,y+1))
 
         return returnList
 
@@ -191,16 +191,16 @@ class PathPlanner:
 
         if x != 0 and y != 0:
             if PathPlanner.is_cell_walkable(mapdata,x-1,y-1):
-                returnList.append(x-1,y-1)
+                returnList.append((x-1,y-1))
         if x != mapdata.info.width-1 and y != 0:
             if PathPlanner.is_cell_walkable(mapdata,x+1,y-1):
-                returnList.append(x+1,y-1)
+                returnList.append((x+1,y-1))
         if y != mapdata.info.height-1 and x != 0:
             if PathPlanner.is_cell_walkable(mapdata,x-1,y+1):
-                returnList.append(x-1,y-1)
+                returnList.append((x-1,y-1))
         if x != mapdata.info.width-1 and y != mapdata.info.height-1:
             if PathPlanner.is_cell_walkable(mapdata,x+1,y+1):
-                returnList.append(x+1,y+1)
+                returnList.append((x+1,y+1))
 
         return returnList
 
@@ -219,7 +219,9 @@ class PathPlanner:
             return map_server().map
         except rospy.ServiceException, e:
             return None
-    def force_inbound(self,mapdata,curr_x,curr_y):
+
+    @staticmethod
+    def force_inbound(mapdata,curr_x,curr_y):
         maxY = mapdata.info.height-1
         maxX = mapdata.info.width-1
         minX = 0
@@ -247,11 +249,11 @@ class PathPlanner:
         for y in range(mapdata.info.height):
             for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if mapdata.data[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
+                if mapdata.data[PathPlanner.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
 
                     for y2 in range(mapdata.info.height-padding,mapdata.info.height+padding):
                         for x2 in range(mapdata.info.width-padding,mapdata.info.width+padding):
-                            x3, y3 = self.force_inbound(mapdata,x2,y2)
+                            x3, y3 = PathPlanner.force_inbound(mapdata,x2,y2)
                             paddedArray[self.grid_to_index(mapdata,x3,y3)] = 100
 
         gridCellsList = []
@@ -259,8 +261,8 @@ class PathPlanner:
         for y in range(mapdata.info.height):
             for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if paddedArray[self.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
-                    world_point = self.grid_to_world(mapdata,x,y)
+                if paddedArray[PathPlanner.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
+                    world_point = PathPlanner.grid_to_world(mapdata,x,y)
                     gridCellsList.append(world_point)
 
         ## Create a GridCells message and publish it
@@ -314,8 +316,8 @@ class PathPlanner:
         """
         return round(value / 45.0) * 45.0
 
-
-    def path_to_message(self, mapdata, path):
+    @staticmethod
+    def path_to_message(mapdata, path):
         """
         Takes a path on the grid and returns a Path message.
         :param path [[(int,int)]] The path on the grid (a list of tuples)
@@ -349,7 +351,7 @@ class PathPlanner:
         # ## Return a Path message
         returnObj = GetPlan()
         waypoints = 0
-        returnObj.plan = self.path_to_message(mapdata, waypoints)
+        returnObj.plan = PathPlanner.path_to_message(mapdata, waypoints)
         returnObj.start = PoseStamped()
         returnObj.goal = PoseStamped()
         returnObj.tolerance = 0.1
