@@ -5,27 +5,22 @@ import rospy
 from nav_msgs.srv import GetPlan, GetMap
 from nav_msgs.msg import GridCells, OccupancyGrid, Path
 from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
-from tf_conversions.transformations import quaternion_from_euler
-
-
+from tf_conversions.posemath import transformations
 
 class PathPlanner:
-
-
-
     def __init__(self):
         """
         Class constructor
         """
-        ### REQUIRED CREDIT
-        ## Initialize the node and call it "path_planner"
+        # REQUIRED CREDIT
+        # Initialize the node and call it "path_planner"
         rospy.init_node("path_planner")
-        ## Create a new service called "plan_path" that accepts messages of
-        ## type GetPlan and calls self.plan_path() when a message is received
-        self.pathService = rospy.Service('plan_path',GetPlan,self.plan_path)
-        ## Create a publisher for the C-space (the enlarged occupancy grid)
-        ## The topic is "/path_planner/cspace", the message type is GridCells
-        self.pubCspace = rospy.Publisher("/path_planner/cspace",GridCells, queue_size = 10)
+        # Create a new service called "plan_path" that accepts messages of
+        # type GetPlan and calls self.plan_path() when a message is received
+        self.pathService = rospy.Service('plan_path', GetPlan, self.plan_path)
+        # Create a publisher for the C-space (the enlarged occupancy grid)
+        # The topic is "/path_planner/cspace", the message type is GridCells
+        self.pubCspace = rospy.Publisher("/path_planner/cspace", GridCells, queue_size=10)
         ## Create publishers for A* (expanded cells, frontier, ...)
         ## Choose a the topic names, the message type is GridCells
         # TODO
@@ -34,8 +29,6 @@ class PathPlanner:
         ## Sleep to allow roscore to do some housekeeping
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
-
-
 
     @staticmethod
     def grid_to_index(mapdata, x, y):
@@ -47,8 +40,6 @@ class PathPlanner:
         """
         return y * mapdata.info.width + x
 
-
-
     @staticmethod
     def euclidean_distance(x1, y1, x2, y2):
         """
@@ -59,9 +50,7 @@ class PathPlanner:
         :param y2 [int or float] Y coordinate of second point.
         :return   [float]        The distance.
         """
-        return math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
-
-
+        return math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
 
     @staticmethod
     def grid_to_world(mapdata, x, y):
@@ -106,20 +95,18 @@ class PathPlanner:
         ### REQUIRED CREDIT
         rospy.loginfo("converting path into a list of PoseStamped")
         posestamp_list = []
-        yaw = 0
-        for i in range(len(path)):
-            yaw = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
+        for i in range(len(path)-1):
+            yaw = PathPlanner.round_to_45(
+                math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
             single_pose = PoseStamped()
             pos = PathPlanner.grid_to_world(mapdata, path[i][0], path[i][1])
-            q = quaternion_from_euler(0, 0, yaw)
+            q = transformations.quaternion_from_euler(0, 0, yaw)
             # going back to ros quaternion
             orient = Quaternion(q[0], q[1], q[2], q[3])
             single_pose.pose.position = pos
             single_pose.pose.orientation = orient
             posestamp_list.append(single_pose)
         return posestamp_list
-
-
 
     @staticmethod
     def is_cell_walkable(mapdata, x, y):
@@ -136,12 +123,11 @@ class PathPlanner:
 
         ### REQUIRED CREDIT
         "if the x and y coordinates are out of bounds"
-        if  0 <= x < mapdata.info.width-1 and mapdata.info.height-1 > y >= 0:
+        if 0 <= x < mapdata.info.width - 1 and mapdata.info.height - 1 > y >= 0:
             "if the data in the cell is less than 0.196(threshold of the free cell)"
             if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] < 0.196:
                 return True
         return False
-
 
     @staticmethod
     def neighbors_of_4(mapdata, x, y):
@@ -153,29 +139,25 @@ class PathPlanner:
         :return        [[(int,int)]]   A list of walkable 4-neighbors.
         """
 
-        if(x < 0 | x > mapdata.info.width-1 | y < 0 | y > mapdata.info.height-1):
+        if x < 0 | x > mapdata.info.width - 1 | y < 0 | y > mapdata.info.height - 1:
             raise ValueError("input cell is not within the bounds of the map")
 
         returnList = []
 
         if x != 0:
-            if PathPlanner.is_cell_walkable(mapdata,x-1,y):
-                returnList.append((x-1,y))
-        if x != mapdata.info.width-1:
-            if PathPlanner.is_cell_walkable(mapdata,x+1,y):
-                returnList.append((x+1,y))
+            if PathPlanner.is_cell_walkable(mapdata, x - 1, y):
+                returnList.append((x - 1, y))
+        if x != mapdata.info.width - 1:
+            if PathPlanner.is_cell_walkable(mapdata, x + 1, y):
+                returnList.append((x + 1, y))
         if y != 0:
-            if PathPlanner.is_cell_walkable(mapdata,x,y-1):
-                returnList.append((x,y-1))
-        if y != mapdata.info.height-1:
-            if PathPlanner.is_cell_walkable(mapdata,x,y+1):
-                returnList.append((x,y+1))
+            if PathPlanner.is_cell_walkable(mapdata, x, y - 1):
+                returnList.append((x, y - 1))
+        if y != mapdata.info.height - 1:
+            if PathPlanner.is_cell_walkable(mapdata, x, y + 1):
+                returnList.append((x, y + 1))
 
         return returnList
-
-
-
-
 
     @staticmethod
     def neighbors_of_8(mapdata, x, y):
@@ -186,24 +168,23 @@ class PathPlanner:
         :param y       [int]           The Y coordinate in the grid.
         :return        [[(int,int)]]   A list of walkable 8-neighbors.
         """
-        #This already checks for in-boundness
+        # This already checks for in-boundness
         returnList = PathPlanner.neighbors_of_4(mapdata, x, y)
 
         if x != 0 and y != 0:
-            if PathPlanner.is_cell_walkable(mapdata,x-1,y-1):
-                returnList.append((x-1,y-1))
-        if x != mapdata.info.width-1 and y != 0:
-            if PathPlanner.is_cell_walkable(mapdata,x+1,y-1):
-                returnList.append((x+1,y-1))
-        if y != mapdata.info.height-1 and x != 0:
-            if PathPlanner.is_cell_walkable(mapdata,x-1,y+1):
-                returnList.append((x-1,y-1))
-        if x != mapdata.info.width-1 and y != mapdata.info.height-1:
-            if PathPlanner.is_cell_walkable(mapdata,x+1,y+1):
-                returnList.append((x+1,y+1))
+            if PathPlanner.is_cell_walkable(mapdata, x - 1, y - 1):
+                returnList.append((x - 1, y - 1))
+        if x != mapdata.info.width - 1 and y != 0:
+            if PathPlanner.is_cell_walkable(mapdata, x + 1, y - 1):
+                returnList.append((x + 1, y - 1))
+        if y != mapdata.info.height - 1 and x != 0:
+            if PathPlanner.is_cell_walkable(mapdata, x - 1, y + 1):
+                returnList.append((x - 1, y - 1))
+        if x != mapdata.info.width - 1 and y != mapdata.info.height - 1:
+            if PathPlanner.is_cell_walkable(mapdata, x + 1, y + 1):
+                returnList.append((x + 1, y + 1))
 
         return returnList
-
 
     @staticmethod
     def request_map():
@@ -221,14 +202,14 @@ class PathPlanner:
             return None
 
     @staticmethod
-    def force_inbound(mapdata,curr_x,curr_y):
-        maxY = mapdata.info.height-1
-        maxX = mapdata.info.width-1
+    def force_inbound(mapdata, curr_x, curr_y):
+        maxY = mapdata.info.height - 1
+        maxX = mapdata.info.width - 1
         minX = 0
         minY = 0
 
-        newX = max(minX,min(curr_x, maxX))
-        newY = max(minY,min(curr_y, maxY))
+        newX = max(minX, min(curr_x, maxX))
+        newY = max(minY, min(curr_y, maxY))
 
         return newX, newY
 
@@ -243,26 +224,26 @@ class PathPlanner:
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
 
-        paddedArray = mapdata.data
+        paddedArray = list(mapdata.data)
 
         ## Go through each cell in the occupancy grid
         for y in range(mapdata.info.height):
             for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if mapdata.data[PathPlanner.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
+                if mapdata.data[PathPlanner.grid_to_index(mapdata, y, x)] > OBSTACLE_THRESH:
 
-                    for y2 in range(mapdata.info.height-padding,mapdata.info.height+padding):
-                        for x2 in range(mapdata.info.width-padding,mapdata.info.width+padding):
-                            x3, y3 = PathPlanner.force_inbound(mapdata,x2,y2)
-                            paddedArray[self.grid_to_index(mapdata,x3,y3)] = 100
-
+                    for y2 in range(mapdata.info.height - padding, mapdata.info.height + padding):
+                        for x2 in range(mapdata.info.width - padding, mapdata.info.width + padding):
+                            x3, y3 = PathPlanner.force_inbound(mapdata, x2, y2)
+                            paddedArray[self.grid_to_index(mapdata, x3, y3)] = 100
+        paddedArray = tuple(paddedArray)
         gridCellsList = []
 
         for y in range(mapdata.info.height):
             for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if paddedArray[PathPlanner.grid_to_index(mapdata,y,x)] > OBSTACLE_THRESH:
-                    world_point = PathPlanner.grid_to_world(mapdata,x,y)
+                if paddedArray[PathPlanner.grid_to_index(mapdata, y, x)] > OBSTACLE_THRESH:
+                    world_point = PathPlanner.grid_to_world(mapdata, x, y)
                     gridCellsList.append(world_point)
 
         ## Create a GridCells message and publish it
@@ -277,13 +258,9 @@ class PathPlanner:
 
         return mapdata
 
-
-
     def a_star(self, mapdata, start, goal):
         ### REQUIRED CREDIT
         rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
-
-
 
     @staticmethod
     def optimize_path(path):
@@ -299,11 +276,13 @@ class PathPlanner:
 
         pathCopy = path
 
-        for i in range(1, len(path)-1):
-            curr_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1]-path[i][1]),(path[i+1][0]-path[i][0]))))
-            last_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i][1]-path[i-1][1]),(path[i][0]-path[i-1][0]))))
+        for i in range(1, len(path) - 1):
+            curr_heading = PathPlanner.round_to_45(
+                math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
+            last_heading = PathPlanner.round_to_45(
+                math.degrees(math.atan2((path[i][1] - path[i - 1][1]), (path[i][0] - path[i - 1][0]))))
 
-            if curr_heading == last_heading
+            if curr_heading == last_heading:
                 pathCopy.pop(i)
 
         return pathCopy
@@ -350,21 +329,18 @@ class PathPlanner:
         # waypoints = PathPlanner.optimize_path(path)
         # ## Return a Path message
         returnObj = GetPlan()
-        waypoints = 0
+        waypoints = [(0,1),(0,2)]
         returnObj.plan = PathPlanner.path_to_message(mapdata, waypoints)
         returnObj.start = PoseStamped()
         returnObj.goal = PoseStamped()
         returnObj.tolerance = 0.1
         return returnObj.plan
 
-
-
     def run(self):
         """
         Runs the node until Ctrl-C is pressed.
         """
         rospy.spin()
-
 
 
 if __name__ == '__main__':
