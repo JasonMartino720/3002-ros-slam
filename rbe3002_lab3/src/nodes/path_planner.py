@@ -252,10 +252,9 @@ class PathPlanner:
         msg.cell_width = 0.03
         msg.cell_height = 0.03
         msg.cells = gridCellsList
-        msg.header.frame_id = "map"
-        rospy.loginfo("GridCells: " + str(msg))
+        msg.header.frame_id = 'map'
         self.pubCspace.publish(msg)
-
+        rospy.loginfo("GridCells: " + str(msg))
         mapdata.data = paddedArray
 
         return mapdata
