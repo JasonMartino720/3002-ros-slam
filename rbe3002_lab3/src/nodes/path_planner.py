@@ -253,6 +253,7 @@ class PathPlanner:
         msg.cell_height = 0.03
         msg.cells = gridCellsList
         msg.header.frame_id = "map"
+        rospy.loginfo("GridCells: " + str(msg))
         self.pubCspace.publish(msg)
 
         mapdata.data = paddedArray
@@ -392,8 +393,8 @@ class PathPlanner:
         cspacedata = self.calc_cspace(mapdata, 1)
         # ## Execute A*
         start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
-        goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
-        path  = self.a_star(cspacedata, start, goal)
+        goal = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
+        path = self.a_star(cspacedata, start, goal)
         rospy.loginfo("a_star output: " + path)
         # ## Optimize waypoints
         waypoints = PathPlanner.optimize_path(path)
