@@ -44,9 +44,8 @@ class Lab3:
         curr_pos.pose.position = Point(self.px, self.py, 0)
         quat = quaternion_from_euler(0, 0, self.pth)
         curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-        msg_to_send.start = curr_pos
-        msg_to_send.goal = msg
-        msg_to_send.tolerance = TOLERANCE
+        rospy.loginfo("Creating Msg w/ CurPos: " + curr_pos)
+        rospy.loginfo("Creating Msg w/ Goal: " + msg)
 
         #Request Plan
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
