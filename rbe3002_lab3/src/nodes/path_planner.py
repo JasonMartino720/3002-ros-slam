@@ -393,15 +393,16 @@ class PathPlanner:
         cspacedata = self.calc_cspace(mapdata, 1)
         # ## Execute A*
         start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
-        goal = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
-        path = self.a_star(cspacedata, start, goal)
-        rospy.loginfo("a_star output: " + path)
+        goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
+        path  = self.a_star(cspacedata, start, goal)
+        rospy.loginfo("a_star output: " + str(path))
+
         # ## Optimize waypoints
         waypoints = PathPlanner.optimize_path(path)
-        rospy.loginfo("Optimized Waypoints: " + waypoints)
+        rospy.loginfo("Optimized Waypoints: " + str(waypoints))
         # ## Return a Path message, this line can be erased and returned directly after debug
         return_obj = PathPlanner.path_to_message(mapdata, waypoints)
-        rospy.loginfo("path_to_message output: " + return_obj)
+        rospy.loginfo("path_to_message output: " + str(return_obj))
         return return_obj
 
     def run(self):
