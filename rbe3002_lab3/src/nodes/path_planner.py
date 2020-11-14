@@ -341,7 +341,11 @@ class PathPlanner:
 
         pathCopy = path
 
-        for i in range(1, len(path) - 1):
+        rospy.loginfo("Original Path Length: " + str(len(path)))
+
+        #Divide lenght by two since leng returns, counting both X and Y
+        for i in range(1, len(path)/2 - 1):
+            rospy.loginfo(i)
             curr_heading = PathPlanner.round_to_45(
                 math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
             last_heading = PathPlanner.round_to_45(

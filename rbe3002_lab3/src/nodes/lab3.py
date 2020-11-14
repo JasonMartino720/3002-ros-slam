@@ -53,7 +53,7 @@ class Lab3:
         get_plan_obj = path_planner(curr_pos, msg, TOLERANCE)
         waypoints = get_plan_obj.plan.poses
 
-        for pose in range(waypoints):
+        for pose in waypoints:
             self.go_to(pose)
 
         rospy.loginfo("Path Completed!")
