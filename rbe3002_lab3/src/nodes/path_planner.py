@@ -394,15 +394,14 @@ class PathPlanner:
         start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
         goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
         path  = self.a_star(cspacedata, start, goal)
+        rospy.loginfo("a_star output: " + path)
         # ## Optimize waypoints
         waypoints = PathPlanner.optimize_path(path)
-        # ## Return a Path message
-        returnObj = GetPlan()
-        returnObj.plan = PathPlanner.path_to_message(mapdata, waypoints)
-        returnObj.start = msg.start
-        returnObj.goal = msg.goal
-        returnObj.tolerance = 0.1
-        return returnObj.plan
+        rospy.loginfo("Optimized Waypoints: " + waypoints)
+        # ## Return a Path message, this line can be erased and returned directly after debug
+        return_obj = PathPlanner.path_to_message(mapdata, waypoints)
+        rospy.loginfo("path_to_message output: " + return_obj)
+        return return_obj
 
     def run(self):
         """
