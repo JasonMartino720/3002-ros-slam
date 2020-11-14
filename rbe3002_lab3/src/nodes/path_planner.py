@@ -2,7 +2,6 @@
 
 import math
 import rospy
-import priority_queue
 from nav_msgs.srv import GetPlan, GetMap
 from nav_msgs.msg import GridCells, OccupancyGrid, Path
 from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
