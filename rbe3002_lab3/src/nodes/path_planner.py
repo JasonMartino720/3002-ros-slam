@@ -390,6 +390,7 @@ class PathPlanner:
         # if mapdata is None:
         #     return Path()
         # ## Calculate the C-space and publish it
+        rospy.wait_for_service('static_map', timeout=None)
         cspacedata = self.calc_cspace(mapdata, 1)
         rospy.sleep(0.10)
         # ## Execute A*
