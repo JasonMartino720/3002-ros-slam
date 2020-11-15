@@ -391,6 +391,7 @@ class PathPlanner:
         #     return Path()
         # ## Calculate the C-space and publish it
         cspacedata = self.calc_cspace(mapdata, 1)
+        rospy.sleep(0.10)
         # ## Execute A*
         start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
         goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
@@ -409,8 +410,8 @@ class PathPlanner:
         """
         Runs the node until Ctrl-C is pressed.
         """
-        mapdata = PathPlanner.request_map()
-        self.calc_cspace(mapdata,1)
+        # mapdata = PathPlanner.request_map()
+        # self.calc_cspace(mapdata,1)
         rospy.spin()
 
 

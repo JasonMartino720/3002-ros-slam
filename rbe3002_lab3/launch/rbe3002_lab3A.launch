@@ -1,6 +1,7 @@
   <launch>
       <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_empty_world.launch" />
-      <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_gazebo_rviz.launch" />
-	  	<node pkg="rqt_console" type="rqt_console" name="rqt_console" />
+      <!-- <include file="~catkin_ws/src/rbe3002_lab3/launch/rbe3002_lab3C.rviz" /> -->
+      <node type="rviz" name="rviz" pkg="rviz" args="-d $ find(rbe3002_lab3)/launch/rbe3002_lab3C.rviz" />
+    	<node pkg="rqt_console" type="rqt_console" name="rqt_console" />
 			<node pkg="rqt_graph" type="rqt_graph" name="rqt_graph" />
   </launch>
