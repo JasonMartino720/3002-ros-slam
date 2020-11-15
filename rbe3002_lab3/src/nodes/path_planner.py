@@ -250,10 +250,10 @@ class PathPlanner:
 
         ## Create a GridCells message and publish it
         msg = GridCells()
-        msg.cell_width = 0.03
-        msg.cell_height = 0.03
+        msg.cell_width = mapdata.info.resolution
+        msg.cell_height = mapdata.info.resolution
         msg.cells = gridCellsList
-        msg.header.frame_id = "map"
+        msg.header = mapdata.header
         self.pubCspace.publish(msg)
 
         mapdata.data = paddedArray
@@ -397,7 +397,10 @@ class PathPlanner:
         """
         Runs the node until Ctrl-C is pressed.
         """
+
+        self.calc_cspace(mapdata,1)
         rospy.spin()
+
 
 
 if __name__ == '__main__':

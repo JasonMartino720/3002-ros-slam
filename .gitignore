@@ -22,3 +22,7 @@ rbe3002_lab3/.idea/
 rbe3002_lab3/venv/
 
 *.pyc
+
+rbe3002_lab3/.DS_Store
+
+.DS_Store
