@@ -409,7 +409,7 @@ class PathPlanner:
         """
         Runs the node until Ctrl-C is pressed.
         """
-
+        mapdata = PathPlanner.request_map()
         self.calc_cspace(mapdata,1)
         rospy.spin()
 
