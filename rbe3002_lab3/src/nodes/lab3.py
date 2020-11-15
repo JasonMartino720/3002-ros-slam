@@ -44,16 +44,15 @@ class Lab3:
         curr_pos.pose.position = Point(self.px, self.py, 0)
         quat = quaternion_from_euler(0, 0, self.pth)
         curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-        msg_to_send.start = curr_pos
-        msg_to_send.goal = msg
-        msg_to_send.tolerance = TOLERANCE
+        rospy.loginfo("Creating Msg w/ CurPos: " + str(curr_pos))
+        rospy.loginfo("Creating Msg w/ Goal: " + str(msg))
 
         #Request Plan
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
-        get_plan_obj = path_planner(msg_to_send)
+        get_plan_obj = path_planner(curr_pos, msg, TOLERANCE)
         waypoints = get_plan_obj.plan.poses
 
-        for pose in range(waypoints):
+        for pose in waypoints:
             self.go_to(pose)
 
         rospy.loginfo("Path Completed!")
@@ -87,7 +86,7 @@ class Lab3:
         :param linear_speed [float] [m/s] The forward linear speed.
         """
         TOLERANCE = 0.5 #meters
-        kP = 13.1;
+
 
         self.ix = self.px
         self.iy = self.py
@@ -99,7 +98,7 @@ class Lab3:
 
         while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
             rospy.sleep(0.005)
-            self.send_speed(linear_speed,-(self.angular_z * kP))
+            self.send_speed(linear_speed, 0)
 
         for x in range(1000):
             rospy.sleep(0.005)
@@ -138,14 +137,18 @@ class Lab3:
         """
 
         #From: https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
-        ROTATION_SPEED = 2.84 #Rad/sec
+        ROTATION_SPEED = 0.24 #Rad/sec
         DRIVE_SPEED = 0.22 #Meters/sec
 
         goal = msg.pose.position
+        rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
+        rospy.loginfo("Goal Pos: " + str(goal.x) + " AND " + str(goal.y))
 
-
+        rospy.loginfo("Going to angle: "+ str(angle_to_goal(self.px,self.py,goal.x,goal.y)))
         self.rotate(angle_to_goal(self.px,self.py,goal.x,goal.y), ROTATION_SPEED)
+        rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,goal.x,goal.y)))
         self.smooth_drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
+        rospy.loginfo("Going to angle: " + str(orientation_to_yaw(msg.pose.orientation)))
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
 
     def update_odometry(self, msg):

@@ -26,3 +26,7 @@ rbe3002_lab3/venv/
 rbe3002_lab3/.DS_Store
 
 .DS_Store
+
+.idea/
+
+venv/

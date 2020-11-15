@@ -2,7 +2,6 @@
 
 import math
 import rospy
-import priority_queue
 from nav_msgs.srv import GetPlan, GetMap
 from nav_msgs.msg import GridCells, OccupancyGrid, Path
 from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
@@ -255,7 +254,7 @@ class PathPlanner:
         msg.cells = gridCellsList
         msg.header = mapdata.header
         self.pubCspace.publish(msg)
-
+        rospy.loginfo("GridCells: " + str(msg))
         mapdata.data = paddedArray
 
         return mapdata
@@ -277,13 +276,21 @@ class PathPlanner:
             if current == goal:
                 break
 
-            for new in PathPlanner.neighbors_of_4(mapdata, current[0], current[1]):
-                new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],next[0],next[1])
-                if next not in cost_so_far or new_cost < cost_so_far[next]:
-                    cost_so_far[next] = new_cost
-                    priority = new_cost + PathPlanner.euclidean_distance(next[0],next[1],goal[0],goal[1])
-                    frontier.put(next,priority)
-                    came_from[next] = current
+            for neighbour in PathPlanner.neighbors_of_4(mapdata, current[0], current[1]):
+                rospy.loginfo(str(type(cost_so_far[current])))
+                rospy.loginfo(str(cost_so_far[current]))
+                rospy.loginfo(str(current))
+                a = cost_so_far[current]
+                b = PathPlanner.euclidean_distance(current[0],current[1],neighbour[0],neighbour[1])
+                rospy.loginfo(a)
+                rospy.loginfo(b)
+                #new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],next[0],next[1])
+                new_cost = a + b
+                if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour]:
+                    cost_so_far[neighbour] = new_cost
+                    priority = new_cost + PathPlanner.euclidean_distance(neighbour[0],neighbour[1],goal[0],goal[1])
+                    frontier.put(neighbour,priority)
+                    came_from[neighbour] = current
 
         currPos = goal
         finalPath = []
@@ -334,7 +341,11 @@ class PathPlanner:
 
         pathCopy = path
 
-        for i in range(1, len(path) - 1):
+        rospy.loginfo("Original Path Length: " + str(len(path)))
+
+        #Divide lenght by two since leng returns, counting both X and Y
+        for i in range(1, len(path)/2 - 1):
+            rospy.loginfo(i)
             curr_heading = PathPlanner.round_to_45(
                 math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
             last_heading = PathPlanner.round_to_45(
@@ -364,6 +375,7 @@ class PathPlanner:
         rospy.loginfo("Returning a Path message")
         path_message = Path()
         path_message.poses = PathPlanner.path_to_poses(mapdata, path)
+        path_message.poses.pop(0)
         return path_message
 
     def plan_path(self, msg):
@@ -383,15 +395,15 @@ class PathPlanner:
         start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
         goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
         path  = self.a_star(cspacedata, start, goal)
+        rospy.loginfo("a_star output: " + str(path))
+
         # ## Optimize waypoints
         waypoints = PathPlanner.optimize_path(path)
-        # ## Return a Path message
-        returnObj = GetPlan()
-        returnObj.plan = PathPlanner.path_to_message(mapdata, waypoints)
-        returnObj.start = msg.start
-        returnObj.goal = msg.goal
-        returnObj.tolerance = 0.1
-        return returnObj.plan
+        rospy.loginfo("Optimized Waypoints: " + str(waypoints))
+        # ## Return a Path message, this line can be erased and returned directly after debug
+        return_obj = PathPlanner.path_to_message(mapdata, waypoints)
+        rospy.loginfo("path_to_message output: " + str(return_obj))
+        return return_obj
 
     def run(self):
         """
