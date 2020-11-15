@@ -376,6 +376,7 @@ class PathPlanner:
         rospy.loginfo("Returning a Path message")
         path_message = Path()
         path_message.poses = PathPlanner.path_to_poses(mapdata, path)
+        path_message.poses.pop(0)
         return path_message
 
     def plan_path(self, msg):
