@@ -231,7 +231,7 @@ class PathPlanner:
         for x in range(mapdata.info.height):
             for y in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] > OBSTACLE_THH:
+                if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] > OBSTACLE_THRESH:
 
                     for x2 in range(mapdata.info.height - padding, mapdata.info.height + padding):
                         for y2 in range(mapdata.info.width - padding, mapdata.info.width + padding):
