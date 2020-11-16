@@ -52,6 +52,7 @@ class Lab3:
         get_plan_obj = path_planner(curr_pos, msg, TOLERANCE)
         waypoints = get_plan_obj.plan.poses
 
+        rospy.loginfo(waypoints)
         for pose in waypoints:
             self.go_to(pose)
 
@@ -85,26 +86,29 @@ class Lab3:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The forward linear speed.
         """
-        TOLERANCE = 0.5 #meters
+        TOLERANCE = 0.06 #meters
 
 
         self.ix = self.px
         self.iy = self.py
 
-        for x in range(1000):
-            rospy.sleep(0.005)
-            self.send_speed(linear_speed*(x/1000.0),0)
-        self.send_speed(linear_speed,0)
+        # for x in range(1000):
+        #     rospy.sleep(0.005)
+        #     self.send_speed(linear_speed*(x/1000.0),0)
+        # self.send_speed(linear_speed,0)
+
+        # while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
+        #     rospy.sleep(0.005)
+        #     self.send_speed(linear_speed, 0)
 
         while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
-            rospy.sleep(0.005)
-            self.send_speed(linear_speed, 0)
+            self.send_speed(linear_speed, -self.angular_z)
 
-        for x in range(1000):
-            rospy.sleep(0.005)
-            self.send_speed(linear_speed*((1000-x)/1000.0),0)
+        # for x in range(1000):
+        #     rospy.sleep(0.005)
+        #     self.send_speed(linear_speed*((1000-x)/1000.0),0)
 
-        self.send_speed(0,0)
+        # self.send_speed(0,0)
 
         print("Move Done!")
 
@@ -116,7 +120,7 @@ class Lab3:
         :param angle         [float] [rad]   The distance to cover.
         :param angular_speed [float] [rad/s] The angular speed.
         """
-        TOLERANCE = 0.1 #rad
+        TOLERANCE = 0.08 #rad
 
         goalAngle = normalize_angle(angle)
 
@@ -138,18 +142,19 @@ class Lab3:
 
         #From: https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
         ROTATION_SPEED = 0.24 #Rad/sec
-        DRIVE_SPEED = 0.22 #Meters/sec
+        DRIVE_SPEED = 0.15 #Meters/sec
 
         goal = msg.pose.position
         # rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
         # rospy.loginfo("Goal Pos: " + str(goal.x) + " AND " + str(goal.y))
 
-        # rospy.loginfo("Going to angle: "+ str(angle_to_goal(self.px,self.py,goal.x,goal.y)))
+        rospy.loginfo("Going to angle: "+ str(angle_to_goal(self.px,self.py,goal.x,goal.y)))
         self.rotate(angle_to_goal(self.px,self.py,goal.x,goal.y), ROTATION_SPEED)
-        # rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,goal.x,goal.y)))
-        self.smooth_drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
-        # rospy.loginfo("Going to angle: " + str(orientation_to_yaw(msg.pose.orientation)))
+        rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,goal.x,goal.y)))
+        self.drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
+        rospy.loginfo("Going to angle: " + str(orientation_to_yaw(msg.pose.orientation)))
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
+        rospy.loginfo("final position: " + str(self.pth))
 
     def update_odometry(self, msg):
         """
@@ -188,7 +193,6 @@ class Lab3:
 
         self.ix = self.px
         self.iy = self.py
-        
 
         for x in range(1000):
             rospy.sleep(0.005)
@@ -255,7 +259,8 @@ def angle_to_goal(curr_x,curr_y,goal_x,goal_y):
     """
     Find the angle of the goal w.r.t to current position
     """
-    return normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x))) + math.pi
+    return normalize_angle(math.atan2((goal_y - curr_y), (goal_x - curr_x)))
+
 
 
 def solve_arc_omega(curr_x,curr_y,curr_theta,goal_x,goal_y):

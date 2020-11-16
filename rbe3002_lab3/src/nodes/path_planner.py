@@ -100,9 +100,11 @@ class PathPlanner:
         ### REQUIRED CREDIT
         # rospy.loginfo("converting path into a list of PoseStamped")
         posestamp_list = []
-        for i in range(len(path)-1):
-            yaw = PathPlanner.round_to_45(
-                math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
+        for i in range(len(path)):
+            yaw = 0
+            if i < len(path)-1:
+                yaw = PathPlanner.round_to_45(
+                    math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
             single_pose = PoseStamped()
             pos = PathPlanner.grid_to_world(mapdata, path[i][0], path[i][1])
             q = transformations.quaternion_from_euler(0, 0, yaw)
@@ -383,8 +385,10 @@ class PathPlanner:
         ### REQUIRED CREDIT
         rospy.loginfo("Returning a Path message")
         path_message = Path()
+        rospy.loginfo("The path is: " + str(path))
         path_message.poses = PathPlanner.path_to_poses(mapdata, path)
         path_message.poses.pop(0)
+        rospy.loginfo("path_message: " + str(path_message))
         return path_message
 
     def plan_path(self, msg):
@@ -406,14 +410,14 @@ class PathPlanner:
         start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
         goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
         path  = self.a_star(cspacedata, start, goal)
-        # rospy.loginfo("a_star output: " + str(path))
+        rospy.loginfo("a_star output: " + str(path))
 
         # ## Optimize waypoints
         waypoints = PathPlanner.optimize_path(path)
-        # rospy.loginfo("Optimized Waypoints: " + str(waypoints))
+        rospy.loginfo("Optimized Waypoints: " + str(waypoints))
         # ## Return a Path message, this line can be erased and returned directly after debug
         return_obj = PathPlanner.path_to_message(mapdata, waypoints)
-        # rospy.loginfo("path_to_message output: " + str(return_obj))
+        rospy.loginfo("path_to_message output: " + str(return_obj))
         return return_obj
 
     def run(self):
