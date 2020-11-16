@@ -66,9 +66,9 @@ class PathPlanner:
 
         world_point.x = (x + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.x
         world_point.y = (y + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.y
-        rospy.loginfo("mapdata.info: " + str(mapdata.info))
-        rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
-        rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
+        # rospy.loginfo("mapdata.info: " + str(mapdata.info))
+        # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
+        # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
         return world_point
 
     @staticmethod
@@ -82,8 +82,8 @@ class PathPlanner:
 
         x = int((wp.x - mapdata.info.origin.position.x) / mapdata.info.resolution)
         y = int((wp.y - mapdata.info.origin.position.y) / mapdata.info.resolution)
-        rospy.loginfo("input for worldpoint: " + str(wp.x) + ", " + str(wp.y))
-        rospy.loginfo("world_to_grid x, y: " + str(x) + ", " + str(y))
+        # rospy.loginfo("input for worldpoint: " + str(wp.x) + ", " + str(wp.y))
+        # rospy.loginfo("world_to_grid x, y: " + str(x) + ", " + str(y))
 
         grid_coord = (x, y)
 
@@ -284,14 +284,14 @@ class PathPlanner:
                 break
 
             for neighbour in PathPlanner.neighbors_of_4(mapdata, current[0], current[1]):
-                # rospy.loginfo(str(type(cost_so_far[current])))
-                # rospy.loginfo(str(cost_so_far[current]))
-                # rospy.loginfo(str(current))
+                rospy.loginfo(str(type(cost_so_far[current])))
+                rospy.loginfo(str(cost_so_far[current]))
+                rospy.loginfo(str(current))
                 a = cost_so_far[current]
                 b = PathPlanner.euclidean_distance(current[0],current[1],neighbour[0],neighbour[1])
-                # rospy.loginfo(a)
-                # rospy.loginfo(b)
-                #new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],next[0],next[1])
+                rospy.loginfo(a)
+                rospy.loginfo(b)
+                new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],neighbour[0],neighbour[1])
                 new_cost = a + b
                 if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour]:
                     cost_so_far[neighbour] = new_cost
@@ -307,6 +307,8 @@ class PathPlanner:
             finalPath.append(currPos)
 
         finalPath.reverse()
+        rospy.loginfo(finalPath)
+        rospy.loginfo("A* FINAL PATH:")
 
         return finalPath
 

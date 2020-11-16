@@ -188,6 +188,7 @@ class Lab3:
 
         self.ix = self.px
         self.iy = self.py
+        
 
         for x in range(1000):
             rospy.sleep(0.005)
