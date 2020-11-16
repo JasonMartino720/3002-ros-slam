@@ -198,12 +198,7 @@ class PathPlanner:
         rospy.loginfo("Requesting the map")
         try:
             map_server = rospy.ServiceProxy('static_map', GetMap)
-            mapObj = map_server()
-            x = mapObj.map.info.height
-            y = mapObj.map.info.width
-            mapObj.map.info.height = y
-            mapObj.map.info.width = x
-            return mapObj.map
+            return map_server().map
         except rospy.ServiceException, e:
             return None
 
@@ -233,10 +228,10 @@ class PathPlanner:
         paddedArray = list(mapdata.data)
 
         ## Go through each cell in the occupancy grid
-        for y in range(mapdata.info.height):
-            for x in range(mapdata.info.width):
+        for x in range(mapdata.info.height):
+            for y in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] > OBSTACLE_THRESH:
+                if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] > OBSTACLE_THH:
 
                     for x2 in range(mapdata.info.height - padding, mapdata.info.height + padding):
                         for y2 in range(mapdata.info.width - padding, mapdata.info.width + padding):
