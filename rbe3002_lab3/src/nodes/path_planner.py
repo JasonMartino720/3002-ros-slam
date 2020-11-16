@@ -66,7 +66,9 @@ class PathPlanner:
 
         world_point.x = (x + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.x
         world_point.y = (y + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.y
-        rospy.loginfo("grid_to_world x, y: " + world_point.x + ", " + world_point.y)
+        rospy.loginfo("mapdata.info: " + str(mapdata.info))
+        rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
+        rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
         return world_point
 
     @staticmethod
@@ -80,7 +82,8 @@ class PathPlanner:
 
         x = int((wp.x - mapdata.info.origin.position.x) / mapdata.info.resolution)
         y = int((wp.y - mapdata.info.origin.position.y) / mapdata.info.resolution)
-        rospy.loginfo("world_to_grid x, y: " + x + ", " + y)
+        rospy.loginfo("input for worldpoint: " + str(wp.x) + ", " + str(wp.y))
+        rospy.loginfo("world_to_grid x, y: " + str(x) + ", " + str(y))
 
         grid_coord = (x, y)
 
@@ -95,7 +98,7 @@ class PathPlanner:
         :return        [[PoseStamped]] The path as a list of PoseStamped (world coordinates).
         """
         ### REQUIRED CREDIT
-        rospy.loginfo("converting path into a list of PoseStamped")
+        # rospy.loginfo("converting path into a list of PoseStamped")
         posestamp_list = []
         for i in range(len(path)-1):
             yaw = PathPlanner.round_to_45(
@@ -244,7 +247,7 @@ class PathPlanner:
         for x in range(mapdata.info.height):
             for y in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if paddedArray[PathPlanner.grid_to_index(mapdata, y, x)] > OBSTACLE_THRESH:
+                if paddedArray[PathPlanner.grid_to_index(mapdata, x, y)] > OBSTACLE_THRESH:
                     world_point = PathPlanner.grid_to_world(mapdata, x, y)
                     gridCellsList.append(world_point)
 
@@ -255,14 +258,14 @@ class PathPlanner:
         msg.cells = gridCellsList
         msg.header = mapdata.header
         self.pubCspace.publish(msg)
-        rospy.loginfo("GridCells: " + str(msg))
+        # rospy.loginfo("GridCells: " + str(msg))
         mapdata.data = paddedArray
 
         return mapdata
 
     def a_star(self, mapdata, start, goal):
         ### REQUIRED CREDIT
-        rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
+        # rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
         frontier = PriorityQueue()
         frontier.put(start, 0)
 
@@ -278,13 +281,13 @@ class PathPlanner:
                 break
 
             for neighbour in PathPlanner.neighbors_of_4(mapdata, current[0], current[1]):
-                rospy.loginfo(str(type(cost_so_far[current])))
-                rospy.loginfo(str(cost_so_far[current]))
-                rospy.loginfo(str(current))
+                # rospy.loginfo(str(type(cost_so_far[current])))
+                # rospy.loginfo(str(cost_so_far[current]))
+                # rospy.loginfo(str(current))
                 a = cost_so_far[current]
                 b = PathPlanner.euclidean_distance(current[0],current[1],neighbour[0],neighbour[1])
-                rospy.loginfo(a)
-                rospy.loginfo(b)
+                # rospy.loginfo(a)
+                # rospy.loginfo(b)
                 #new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],next[0],next[1])
                 new_cost = a + b
                 if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour]:
@@ -336,13 +339,13 @@ class PathPlanner:
         :return     [[(x,y)]] The optimized path as a list of tuples (grid coordinates)
         """
         ### EXTRA CREDIT
-        rospy.loginfo("Optimizing path")
+        # rospy.loginfo("Optimizing path")
         curr_heading = 0
         last_heading = 0
 
         pathCopy = path
 
-        rospy.loginfo("Original Path Length: " + str(len(path)))
+        # rospy.loginfo("Original Path Length: " + str(len(path)))
 
         #Divide lenght by two since leng returns, counting both X and Y
         for i in range(1, len(path)/2 - 1):
@@ -398,14 +401,14 @@ class PathPlanner:
         start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
         goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
         path  = self.a_star(cspacedata, start, goal)
-        rospy.loginfo("a_star output: " + str(path))
+        # rospy.loginfo("a_star output: " + str(path))
 
         # ## Optimize waypoints
         waypoints = PathPlanner.optimize_path(path)
-        rospy.loginfo("Optimized Waypoints: " + str(waypoints))
+        # rospy.loginfo("Optimized Waypoints: " + str(waypoints))
         # ## Return a Path message, this line can be erased and returned directly after debug
         return_obj = PathPlanner.path_to_message(mapdata, waypoints)
-        rospy.loginfo("path_to_message output: " + str(return_obj))
+        # rospy.loginfo("path_to_message output: " + str(return_obj))
         return return_obj
 
     def run(self):

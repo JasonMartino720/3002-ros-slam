@@ -44,8 +44,8 @@ class Lab3:
         curr_pos.pose.position = Point(self.px, self.py, 0)
         quat = quaternion_from_euler(0, 0, self.pth)
         curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-        rospy.loginfo("Creating Msg w/ CurPos: " + str(curr_pos))
-        rospy.loginfo("Creating Msg w/ Goal: " + str(msg))
+        # rospy.loginfo("Creating Msg w/ CurPos: " + str(curr_pos))
+        # rospy.loginfo("Creating Msg w/ Goal: " + str(msg))
 
         #Request Plan
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
@@ -141,14 +141,14 @@ class Lab3:
         DRIVE_SPEED = 0.22 #Meters/sec
 
         goal = msg.pose.position
-        rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
-        rospy.loginfo("Goal Pos: " + str(goal.x) + " AND " + str(goal.y))
+        # rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
+        # rospy.loginfo("Goal Pos: " + str(goal.x) + " AND " + str(goal.y))
 
-        rospy.loginfo("Going to angle: "+ str(angle_to_goal(self.px,self.py,goal.x,goal.y)))
+        # rospy.loginfo("Going to angle: "+ str(angle_to_goal(self.px,self.py,goal.x,goal.y)))
         self.rotate(angle_to_goal(self.px,self.py,goal.x,goal.y), ROTATION_SPEED)
-        rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,goal.x,goal.y)))
+        # rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,goal.x,goal.y)))
         self.smooth_drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
-        rospy.loginfo("Going to angle: " + str(orientation_to_yaw(msg.pose.orientation)))
+        # rospy.loginfo("Going to angle: " + str(orientation_to_yaw(msg.pose.orientation)))
         self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
 
     def update_odometry(self, msg):
