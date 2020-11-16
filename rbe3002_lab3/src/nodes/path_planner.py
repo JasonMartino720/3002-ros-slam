@@ -66,7 +66,7 @@ class PathPlanner:
 
         world_point.x = (x + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.x
         world_point.y = (y + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.y
-
+        rospy.loginfo("grid_to_world x, y: " + world_point.x + ", " + world_point.y)
         return world_point
 
     @staticmethod
@@ -80,6 +80,7 @@ class PathPlanner:
 
         x = int((wp.x - mapdata.info.origin.position.x) / mapdata.info.resolution)
         y = int((wp.y - mapdata.info.origin.position.y) / mapdata.info.resolution)
+        rospy.loginfo("world_to_grid x, y: " + x + ", " + y)
 
         grid_coord = (x, y)
 
