@@ -198,7 +198,12 @@ class PathPlanner:
         rospy.loginfo("Requesting the map")
         try:
             map_server = rospy.ServiceProxy('static_map', GetMap)
-            return map_server().map
+            mapObj = map_server()
+            x = mapObj.map.info.height
+            y = mapObj.map.info.width
+            mapObj.map.info.height = y
+            mapObj.map.info.width = x
+            return mapObj.map
         except rospy.ServiceException, e:
             return None
 
@@ -231,17 +236,17 @@ class PathPlanner:
         for y in range(mapdata.info.height):
             for x in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
-                if mapdata.data[PathPlanner.grid_to_index(mapdata, y, x)] > OBSTACLE_THRESH:
+                if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] > OBSTACLE_THRESH:
 
-                    for y2 in range(mapdata.info.height - padding, mapdata.info.height + padding):
-                        for x2 in range(mapdata.info.width - padding, mapdata.info.width + padding):
+                    for x2 in range(mapdata.info.height - padding, mapdata.info.height + padding):
+                        for y2 in range(mapdata.info.width - padding, mapdata.info.width + padding):
                             x3, y3 = PathPlanner.force_inbound(mapdata, x2, y2)
                             paddedArray[self.grid_to_index(mapdata, x3, y3)] = 100
         paddedArray = tuple(paddedArray)
         gridCellsList = []
 
-        for y in range(mapdata.info.height):
-            for x in range(mapdata.info.width):
+        for x in range(mapdata.info.height):
+            for y in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
                 if paddedArray[PathPlanner.grid_to_index(mapdata, y, x)] > OBSTACLE_THRESH:
                     world_point = PathPlanner.grid_to_world(mapdata, x, y)
