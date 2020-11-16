@@ -184,7 +184,7 @@ class PathPlanner:
                 returnList.append((x + 1, y - 1))
         if y != mapdata.info.height - 1 and x != 0:
             if PathPlanner.is_cell_walkable(mapdata, x - 1, y + 1):
-                returnList.append((x - 1, y - 1))
+                returnList.append((x - 1, y + 1))
         if x != mapdata.info.width - 1 and y != mapdata.info.height - 1:
             if PathPlanner.is_cell_walkable(mapdata, x + 1, y + 1):
                 returnList.append((x + 1, y + 1))
@@ -236,11 +236,10 @@ class PathPlanner:
             for y in range(mapdata.info.width):
                 ## Inflate the obstacles where necessary
                 if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] > OBSTACLE_THRESH:
-
-                    for x2 in range(mapdata.info.height - padding, mapdata.info.height + padding):
-                        for y2 in range(mapdata.info.width - padding, mapdata.info.width + padding):
-                            x3, y3 = PathPlanner.force_inbound(mapdata, x2, y2)
-                            paddedArray[self.grid_to_index(mapdata, x3, y3)] = 100
+                    paddedArray[self.grid_to_index(mapdata, x, y)] = 100
+                    for neighbor in PathPlanner.neighbors_of_8(mapdata, x, y):
+                        x3, y3 = PathPlanner.force_inbound(mapdata, neighbor[0], neighbor[1])
+                        paddedArray[self.grid_to_index(mapdata, x3, y3)] = 100
         paddedArray = tuple(paddedArray)
         gridCellsList = []
 
@@ -258,6 +257,10 @@ class PathPlanner:
         msg.cells = gridCellsList
         msg.header = mapdata.header
         self.pubCspace.publish(msg)
+        # rospy.sleep(0.1)
+        # self.pubCspace.publish(msg)
+        # rospy.sleep(0.1)
+        # self.pubCspace.publish(msg)
         # rospy.loginfo("GridCells: " + str(msg))
         mapdata.data = paddedArray
 

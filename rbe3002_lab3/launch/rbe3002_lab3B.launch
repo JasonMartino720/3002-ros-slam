@@ -1,7 +1,6 @@
   <launch>
       <node pkg="rbe3002_lab3" type="path_planner.py" name="path_planner" />
       <node pkg="rbe3002_lab3" type="lab3.py" name="lab3" />
-      <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher" args="0 0 0 0 0 0 /map /odom 100"/>
 
       <arg name="map_file" default="$(find rbe3002_lab3)maps/simple_map.yaml" />
       <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" />
