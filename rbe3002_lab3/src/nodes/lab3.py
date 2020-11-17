@@ -87,7 +87,7 @@ class Lab3:
         :param linear_speed [float] [m/s] The forward linear speed.
         """
         TOLERANCE = 0.06 #meters
-
+        Kp = 0.002
 
         self.ix = self.px
         self.iy = self.py
@@ -101,8 +101,9 @@ class Lab3:
         #     rospy.sleep(0.005)
         #     self.send_speed(linear_speed, 0)
 
-        while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
-            self.send_speed(linear_speed, -self.angular_z)
+        while(dist_between(self.goal.x,self.goal.y,self.px,self.py) < TOLERANCE):
+            clamped = max(-linear_speed, min(Kp*dist_between(self.goal.x,self.goal.y,self.px,self.py), linear_speed))
+            self.send_speed(clamped, -self.angular_z)
 
         # for x in range(1000):
         #     rospy.sleep(0.005)
@@ -120,17 +121,21 @@ class Lab3:
         :param angle         [float] [rad]   The distance to cover.
         :param angular_speed [float] [rad/s] The angular speed.
         """
-        TOLERANCE = 0.08 #rad
+        TOLERANCE = 0.1 #rad
 
-        goalAngle = normalize_angle(angle)
+        # goalAngle = normalize_angle(angle+math.pi)
+        goalAngle = angle+math.pi
 
-        self.send_speed(0, aspeed)
+        # self.send_speed(0, aspeed)
+        Kp = 0.3
 
         while(abs(self.pth - (goalAngle)) > TOLERANCE):
             print('The target pos is %f we are currently at %f the abs error is %f' % (goalAngle, self.pth, abs(self.pth - (goalAngle))))
+            clamped = max(-aspeed, min(Kp*(self.pth - (goalAngle)), aspeed))
+            self.send_speed(0, clamped)
             rospy.sleep(0.005)
-        print("Rotate Done!")
-
+            
+        rospy.loginfo("Rotate Done!")
         self.send_speed(0, 0)
 
     def go_to(self, msg):
@@ -144,17 +149,19 @@ class Lab3:
         ROTATION_SPEED = 0.24 #Rad/sec
         DRIVE_SPEED = 0.15 #Meters/sec
 
-        goal = msg.pose.position
+        self.goal = msg.pose.position
         # rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
         # rospy.loginfo("Goal Pos: " + str(goal.x) + " AND " + str(goal.y))
 
-        rospy.loginfo("Going to angle: "+ str(angle_to_goal(self.px,self.py,goal.x,goal.y)))
-        self.rotate(angle_to_goal(self.px,self.py,goal.x,goal.y), ROTATION_SPEED)
-        rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,goal.x,goal.y)))
-        self.drive(dist_between(self.px,self.py,goal.x,goal.y), DRIVE_SPEED)
-        rospy.loginfo("Going to angle: " + str(orientation_to_yaw(msg.pose.orientation)))
-        self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
-        rospy.loginfo("final position: " + str(self.pth))
+        rospy.loginfo("Going to intital angle: "+ str(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y)))
+        self.rotate(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y), ROTATION_SPEED)
+        rospy.loginfo("initial ended at this angle: " + str(self.pth))
+        rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,self.goal.x,self.goal.y)))
+        self.drive(dist_between(self.px,self.py,self.goal.x,self.goal.y), DRIVE_SPEED)
+        # rospy.loginfo("Going to final angle: " + str(orientation_to_yaw(msg.pose.orientation)))
+        # self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
+        # rospy.loginfo("final ended at this angle: " + str(self.pth))
+        rospy.loginfo("distance between robot and goal: " + str(dist_between(self.goal.x,self.goal.y,self.px,self.py)))
 
     def update_odometry(self, msg):
         """
