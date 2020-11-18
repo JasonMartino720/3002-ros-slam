@@ -285,7 +285,7 @@ class PathPlanner:
             if current == goal:
                 break
 
-            for neighbour in PathPlanner.neighbors_of_4(mapdata, current[0], current[1]):
+            for neighbour in PathPlanner.neighbors_of_8(mapdata, current[0], current[1]):
                 # rospy.loginfo(str(type(cost_so_far[current])))
                 # rospy.loginfo(str(cost_so_far[current]))
                 # rospy.loginfo(str(current))
@@ -353,8 +353,8 @@ class PathPlanner:
 
         pathCopy = path
 
-        rospy.loginfo("Original Path Length: " + str(len(path))-1)
-        for i in range(len(path)):
+        rospy.loginfo("Original Path Length: " + str(len(path)))
+        for i in range(len(path)-1):
             rospy.loginfo("Current Point: " + str(i))
             curr_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1] - path[i][1]), (path[i+1][0] - path[i][0]))))
             rospy.loginfo("Current Heading: " + str(curr_heading))
@@ -366,10 +366,9 @@ class PathPlanner:
             else:
                 last_heading = curr_heading
 
-        for i, index in rmvIndexList:
-            path.pop(index[i])
+        for index in reversed(rmvIndexList):
+            path.pop(index)
             rospy.loginfo("Popped: " + str(index))
-            i=i-1
 
         return path
 

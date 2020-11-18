@@ -106,8 +106,8 @@ class Lab3:
             piderror = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
             clamped = max(-linear_speed, min(Kp*piderror, linear_speed))
             self.send_speed(clamped, -self.angular_z)
-            rospy.loginfo('The target pos is %f, %f we are currently at %f, %f piderror %f clamped is %f' % (
-            self.goal.x, self.goal.y, self.px, self.py, piderror, clamped))
+            #rospy.loginfo('The target pos is %f, %f we are currently at %f, %f piderror %f clamped is %f' % (
+            #self.goal.x, self.goal.y, self.px, self.py, piderror, clamped))
 
 
         # for x in range(1000):
@@ -139,8 +139,8 @@ class Lab3:
 
             clamped = max(-aspeed, min(Kp*(self.pth - (goalAngle)), aspeed))
             self.send_speed(0, clamped)
-            rospy.loginfo('The target orientation is %f we are currently at %f the error is %f clamped is %f' %(
-            goalAngle, self.pth, self.pth - (goalAngle), clamped))
+            # rospy.loginfo('The target orientation is %f we are currently at %f the error is %f clamped is %f' %(
+            # goalAngle, self.pth, self.pth - (goalAngle), clamped))
             rospy.sleep(0.005)
 
         rospy.loginfo("Rotate Done!")
