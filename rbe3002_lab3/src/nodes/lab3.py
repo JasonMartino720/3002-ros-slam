@@ -86,8 +86,8 @@ class Lab3:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The forward linear speed.
         """
-        TOLERANCE = 0.06 #meters
-        Kp = 0.002
+        TOLERANCE = 0.008 #meters
+        Kp = 0.4
 
         self.ix = self.px
         self.iy = self.py
@@ -100,10 +100,15 @@ class Lab3:
         # while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
         #     rospy.sleep(0.005)
         #     self.send_speed(linear_speed, 0)
+        piderror = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
 
-        while(dist_between(self.goal.x,self.goal.y,self.px,self.py) < TOLERANCE):
-            clamped = max(-linear_speed, min(Kp*dist_between(self.goal.x,self.goal.y,self.px,self.py), linear_speed))
+        while(piderror > TOLERANCE):
+            piderror = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
+            clamped = max(-linear_speed, min(Kp*piderror, linear_speed))
             self.send_speed(clamped, -self.angular_z)
+            rospy.loginfo('The target pos is %f, %f we are currently at %f, %f piderror %f clamped is %f' % (
+            self.goal.x, self.goal.y, self.px, self.py, piderror, clamped))
+
 
         # for x in range(1000):
         #     rospy.sleep(0.005)
@@ -111,7 +116,8 @@ class Lab3:
 
         # self.send_speed(0,0)
 
-        print("Move Done!")
+
+        rospy.loginfo("Move Done!")
 
         self.send_speed(0,0)
 
@@ -121,20 +127,22 @@ class Lab3:
         :param angle         [float] [rad]   The distance to cover.
         :param angular_speed [float] [rad/s] The angular speed.
         """
-        TOLERANCE = 0.1 #rad
+        TOLERANCE = 0.02 #rad
 
-        # goalAngle = normalize_angle(angle+math.pi)
-        goalAngle = angle+math.pi
+        goalAngle = normalize_angle(angle+math.pi)
+        # goalAngle = angle+math.pi
 
         # self.send_speed(0, aspeed)
-        Kp = 0.3
+        Kp = -0.4
 
         while(abs(self.pth - (goalAngle)) > TOLERANCE):
-            print('The target pos is %f we are currently at %f the abs error is %f' % (goalAngle, self.pth, abs(self.pth - (goalAngle))))
+
             clamped = max(-aspeed, min(Kp*(self.pth - (goalAngle)), aspeed))
             self.send_speed(0, clamped)
+            rospy.loginfo('The target orientation is %f we are currently at %f the error is %f clamped is %f' %(
+            goalAngle, self.pth, self.pth - (goalAngle), clamped))
             rospy.sleep(0.005)
-            
+
         rospy.loginfo("Rotate Done!")
         self.send_speed(0, 0)
 
@@ -266,7 +274,7 @@ def angle_to_goal(curr_x,curr_y,goal_x,goal_y):
     """
     Find the angle of the goal w.r.t to current position
     """
-    return normalize_angle(math.atan2((goal_y - curr_y), (goal_x - curr_x)))
+    return normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x)))
 
 
 
