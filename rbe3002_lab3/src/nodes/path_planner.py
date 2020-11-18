@@ -354,7 +354,7 @@ class PathPlanner:
         pathCopy = path
 
         rospy.loginfo("Original Path Length: " + str(len(path)))
-        for i in range(len(path)-1):
+        for i in range(1, len(path)-1):
             rospy.loginfo("Current Point: " + str(i))
             curr_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1] - path[i][1]), (path[i+1][0] - path[i][0]))))
             rospy.loginfo("Current Heading: " + str(curr_heading))

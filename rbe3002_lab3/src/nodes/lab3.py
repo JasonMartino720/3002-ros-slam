@@ -87,9 +87,9 @@ class Lab3:
         :param linear_speed [float] [m/s] The forward linear speed.
         """
         TOLERANCE = 0.00008 #meters
-        Kp = 0.4
-        Ki = 0.01
-        Kd = 0.04
+        Kp = 15.0
+        Ki = 0.0
+        Kd = 5.0
 
         self.ix = self.px
         self.iy = self.py
@@ -105,7 +105,7 @@ class Lab3:
         error = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
         lastError = 0
         intergral = 0
-        while(error > TOLERANCE):
+        while True: #(error > TOLERANCE):
 
             error = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
 
@@ -190,9 +190,9 @@ class Lab3:
         # rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
         # rospy.loginfo("Goal Pos: " + str(goal.x) + " AND " + str(goal.y))
 
-        rospy.loginfo("Going to intital angle: "+ str(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y)))
-        self.rotate(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y), ROTATION_SPEED)
-        rospy.loginfo("initial ended at this angle: " + str(self.pth))
+        # rospy.loginfo("Going to intital angle: "+ str(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y)))
+        # self.rotate(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y), ROTATION_SPEED)
+        # rospy.loginfo("initial ended at this angle: " + str(self.pth))
         rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,self.goal.x,self.goal.y)))
         self.drive(dist_between(self.px,self.py,self.goal.x,self.goal.y), DRIVE_SPEED)
         # rospy.loginfo("Going to final angle: " + str(orientation_to_yaw(msg.pose.orientation)))
