@@ -87,7 +87,7 @@ class Lab3:
         :param linear_speed [float] [m/s] The forward linear speed.
         """
         TOLERANCE = 0.008 #meters
-        Kp = 0.2
+        Kp = 0.4
 
         self.ix = self.px
         self.iy = self.py
@@ -100,12 +100,14 @@ class Lab3:
         # while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
         #     rospy.sleep(0.005)
         #     self.send_speed(linear_speed, 0)
+        piderror = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
 
-        while(dist_between(self.goal.x,self.goal.y,self.px,self.py) > TOLERANCE):
-            clamped = max(-linear_speed, min(Kp*dist_between(self.goal.x,self.goal.y,self.px,self.py), linear_speed))
+        while(piderror > TOLERANCE):
+            piderror = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
+            clamped = max(-linear_speed, min(Kp*piderror, linear_speed))
             self.send_speed(clamped, -self.angular_z)
-            rospy.loginfo('The target pos is %f, %f we are currently at %f, %f dist_between %f clamped is %f' % (
-            self.goal.x, self.goal.y, self.px, self.py, dist_between(self.goal.x,self.goal.y,self.px,self.py), clamped))
+            rospy.loginfo('The target pos is %f, %f we are currently at %f, %f piderror %f clamped is %f' % (
+            self.goal.x, self.goal.y, self.px, self.py, piderror, clamped))
 
 
         # for x in range(1000):
@@ -137,7 +139,7 @@ class Lab3:
 
             clamped = max(-aspeed, min(Kp*(self.pth - (goalAngle)), aspeed))
             self.send_speed(0, clamped)
-            rospy.loginfo('The target pos is %f we are currently at %f the error is %f clamped is %f' %(
+            rospy.loginfo('The target orientation is %f we are currently at %f the error is %f clamped is %f' %(
             goalAngle, self.pth, self.pth - (goalAngle), clamped))
             rospy.sleep(0.005)
 
