@@ -226,7 +226,7 @@ class PathPlanner:
         Publishes the list of cells that were added to the original map.
         :param mapdata [OccupancyGrid] The map data.
         :param padding [int]           The number of cells around the obstacles.
-        :return        [OccupancyGrid] The C-Space.
+        :return        [OccupancyGrid] The C-Space.self.pubCspace.publish(msg)
         """
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
@@ -286,13 +286,13 @@ class PathPlanner:
                 break
 
             for neighbour in PathPlanner.neighbors_of_4(mapdata, current[0], current[1]):
-                rospy.loginfo(str(type(cost_so_far[current])))
-                rospy.loginfo(str(cost_so_far[current]))
-                rospy.loginfo(str(current))
+                # rospy.loginfo(str(type(cost_so_far[current])))
+                # rospy.loginfo(str(cost_so_far[current]))
+                # rospy.loginfo(str(current))
                 a = cost_so_far[current]
                 b = PathPlanner.euclidean_distance(current[0],current[1],neighbour[0],neighbour[1])
-                rospy.loginfo(a)
-                rospy.loginfo(b)
+                # rospy.loginfo(a)
+                # rospy.loginfo(b)
                 new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],neighbour[0],neighbour[1])
                 new_cost = a + b
                 if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour]:
@@ -310,7 +310,7 @@ class PathPlanner:
 
         finalPath.reverse()
         rospy.loginfo(finalPath)
-        rospy.loginfo("A* FINAL PATH:")
+        # rospy.loginfo("A* FINAL PATH:")
 
         return finalPath
 
@@ -349,23 +349,46 @@ class PathPlanner:
         # rospy.loginfo("Optimizing path")
         curr_heading = 0
         last_heading = 0
+        rmvIndexList = []
 
         pathCopy = path
 
-        # rospy.loginfo("Original Path Length: " + str(len(path)))
-
-        #Divide lenght by two since leng returns, counting both X and Y
-        for i in range(1, len(path)/2 - 1):
-            rospy.loginfo(i)
-            curr_heading = PathPlanner.round_to_45(
-                math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
-            last_heading = PathPlanner.round_to_45(
-                math.degrees(math.atan2((path[i][1] - path[i - 1][1]), (path[i][0] - path[i - 1][0]))))
+        rospy.loginfo("Original Path Length: " + str(len(path))-1)
+        for i in range(len(path)):
+            rospy.loginfo("Current Point: " + str(i))
+            curr_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1] - path[i][1]), (path[i+1][0] - path[i][0]))))
+            rospy.loginfo("Current Heading: " + str(curr_heading))
+            rospy.loginfo("Last Heading: " + str(last_heading))
 
             if curr_heading == last_heading:
-                pathCopy.pop(i)
+                rmvIndexList.append(i)
+                last_heading = curr_heading
+            else:
+                last_heading = curr_heading
 
-        return pathCopy
+        for i, index in rmvIndexList:
+            path.pop(index[i])
+            rospy.loginfo("Popped: " + str(index))
+            i=i-1
+
+        return path
+
+        # #Divide lenght by two since leng returns, counting both X and Y
+        # for i in range(0, len(path) - 1):
+        #     rospy.loginfo("Current Point: " + str(i))
+        #     curr_heading = PathPlanner.round_to_45(
+        #         math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
+        #     rospy.loginfo("Current Heading: " + str(curr_heading))
+        #     last_heading = PathPlanner.round_to_45(
+        #         math.degrees(math.atan2((path[i][1] - path[i - 1][1]), (path[i][0] - path[i - 1][0]))))
+        #     rospy.loginfo("Last Heading: " + str(last_heading))
+        #
+        #     if curr_heading == last_heading:
+        #         pathCopy.pop(i)
+        #         rospy.loginfo("Popped: " + str(i))
+        #         i = i-1
+        #
+        # return pathCopy
 
     @staticmethod
     def round_to_45(value):
@@ -402,6 +425,7 @@ class PathPlanner:
         mapdata = PathPlanner.request_map()
         # if mapdata is None:
         #     return Path()
+
         # ## Calculate the C-space and publish it
         rospy.wait_for_service('static_map', timeout=None)
         cspacedata = self.calc_cspace(mapdata, 1)
@@ -410,14 +434,14 @@ class PathPlanner:
         start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
         goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
         path  = self.a_star(cspacedata, start, goal)
-        rospy.loginfo("a_star output: " + str(path))
+        #rospy.loginfo("a_star output: " + str(path))
 
         # ## Optimize waypoints
         waypoints = PathPlanner.optimize_path(path)
-        rospy.loginfo("Optimized Waypoints: " + str(waypoints))
+        #rospy.loginfo("Optimized Waypoints: " + str(waypoints))
         # ## Return a Path message, this line can be erased and returned directly after debug
         return_obj = PathPlanner.path_to_message(mapdata, waypoints)
-        rospy.loginfo("path_to_message output: " + str(return_obj))
+        #rospy.loginfo("path_to_message output: " + str(return_obj))
         return return_obj
 
     def run(self):
