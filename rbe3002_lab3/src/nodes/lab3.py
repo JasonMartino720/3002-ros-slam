@@ -86,8 +86,10 @@ class Lab3:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The forward linear speed.
         """
-        TOLERANCE = 0.008 #meters
+        TOLERANCE = 0.00008 #meters
         Kp = 0.4
+        Ki = 0.01
+        Kd = 0.04
 
         self.ix = self.px
         self.iy = self.py
@@ -100,11 +102,20 @@ class Lab3:
         # while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
         #     rospy.sleep(0.005)
         #     self.send_speed(linear_speed, 0)
-        piderror = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
+        error = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
+        lastError = 0
+        intergral = 0
+        while(error > TOLERANCE):
 
-        while(piderror > TOLERANCE):
-            piderror = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
-            clamped = max(-linear_speed, min(Kp*piderror, linear_speed))
+            error = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
+
+            intergral += error
+            derivative = error - lastError
+            lastError = error
+
+            pidOutput = (Kp*error) + (Ki*intergral) + (Kd*derivative)
+
+            clamped = max(-linear_speed, min(pidOutput, linear_speed))
             self.send_speed(clamped, -self.angular_z)
             #rospy.loginfo('The target pos is %f, %f we are currently at %f, %f piderror %f clamped is %f' % (
             #self.goal.x, self.goal.y, self.px, self.py, piderror, clamped))
@@ -127,21 +138,39 @@ class Lab3:
         :param angle         [float] [rad]   The distance to cover.
         :param angular_speed [float] [rad/s] The angular speed.
         """
-        TOLERANCE = 0.02 #rad
+        TOLERANCE = 0.0001 #rad
 
         goalAngle = normalize_angle(angle+math.pi)
         # goalAngle = angle+math.pi
 
         # self.send_speed(0, aspeed)
-        Kp = -0.4
+        Kp = -24.9
+        # Ki = -0.00002
+        Ki = 0
+        Kd = 0
 
-        while(abs(self.pth - (goalAngle)) > TOLERANCE):
 
-            clamped = max(-aspeed, min(Kp*(self.pth - (goalAngle)), aspeed))
-            self.send_speed(0, clamped)
-            # rospy.loginfo('The target orientation is %f we are currently at %f the error is %f clamped is %f' %(
-            # goalAngle, self.pth, self.pth - (goalAngle), clamped))
-            rospy.sleep(0.005)
+        integral = 0
+        lastError = 0
+
+        error = self.pth - goalAngle
+        # while abs(error) > TOLERANCE:
+        while True:
+            if(self.newOdomReady):
+                self.newOdomReady = False
+                error = self.pth - goalAngle
+
+                integral += error
+
+                derivative = error - lastError
+                lastError = error
+
+                pidOutput = (Kp*error) + (Ki*integral) + (Kd*derivative)
+
+                clamped = max(-aspeed, min(pidOutput, aspeed))
+                self.send_speed(0, clamped)
+                rospy.loginfo('The target orientation is %f we are currently at %f the error is %f, the intergeral is %f, deriviate is %f -> clamped is %f' %(
+                goalAngle, self.pth, error, integral, derivative,clamped))
 
         rospy.loginfo("Rotate Done!")
         self.send_speed(0, 0)
@@ -154,8 +183,8 @@ class Lab3:
         """
 
         #From: https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
-        ROTATION_SPEED = 0.24 #Rad/sec
-        DRIVE_SPEED = 0.15 #Meters/sec
+        ROTATION_SPEED = 0.84 #Rad/sec
+        DRIVE_SPEED = 0.22 #Meters/sec
 
         self.goal = msg.pose.position
         # rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
@@ -181,6 +210,7 @@ class Lab3:
         self.px = msg.pose.pose.position.x
         self.py = msg.pose.pose.position.y
         self.pth = orientation_to_yaw(msg.pose.pose.orientation)
+        self.newOdomReady = True
 
     def arc_to(self, msg):
         """
