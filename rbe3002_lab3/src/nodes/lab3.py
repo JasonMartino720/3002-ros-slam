@@ -144,23 +144,23 @@ class Lab3:
         # goalAngle = angle+math.pi
 
         # self.send_speed(0, aspeed)
-        Kp = -24.9
-        # Ki = -0.00002
-        Ki = 0
-        Kd = 0
+        Kp = -12.5
+        Ki = -1
+        Kd = -6
 
 
         integral = 0
         lastError = 0
 
         error = self.pth - goalAngle
-        # while abs(error) > TOLERANCE:
-        while True:
+        while abs(error) > TOLERANCE:
+        # while True:
             if(self.newOdomReady):
                 self.newOdomReady = False
                 error = self.pth - goalAngle
 
                 integral += error
+                integral = max(-5, min(integral, 5))
 
                 derivative = error - lastError
                 lastError = error
@@ -183,7 +183,7 @@ class Lab3:
         """
 
         #From: https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
-        ROTATION_SPEED = 0.84 #Rad/sec
+        ROTATION_SPEED = 1.34 #Rad/sec
         DRIVE_SPEED = 0.22 #Meters/sec
 
         self.goal = msg.pose.position
