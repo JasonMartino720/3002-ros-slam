@@ -281,7 +281,6 @@ class PathPlanner:
 
         while not frontier.empty():
             current = frontier.get()
-
             if current == goal:
                 break
 

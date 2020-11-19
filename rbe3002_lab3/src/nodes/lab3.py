@@ -86,10 +86,10 @@ class Lab3:
         :param distance     [float] [m]   The distance to cover.
         :param linear_speed [float] [m/s] The forward linear speed.
         """
-        TOLERANCE = 0.00008 #meters
-        Kp = 14.140
-        Ki = 0.0
-        Kd = 12.315
+        TOLERANCE = 0.0005 #meters
+        Kp = 2.140
+        Ki = 0.05
+        Kd = 4
 
         self.ix = self.px
         self.iy = self.py
@@ -105,32 +105,34 @@ class Lab3:
         error = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
         lastError = 0
         intergral = 0
-        while True: #(error > TOLERANCE):
+        # while True:
+        while(abs(error) > TOLERANCE):
+            if(self.newOdomReady2):
+                self.newOdomReady2 = False
+                error = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
 
-            error = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
+                intergral += error
+                intergral = max(-1, min(intergral, 1))
+                derivative = error - lastError
+                lastError = error
 
-            intergral += error
-            derivative = error - lastError
-            lastError = error
+                pidOutput = (Kp*error) + (Ki*intergral) + (Kd*derivative)
 
-            pidOutput = (Kp*error) + (Ki*intergral) + (Kd*derivative)
-
-            clamped = max(-linear_speed, min(pidOutput, linear_speed))
-            self.send_speed(clamped, -self.angular_z)
-            #rospy.loginfo('The target pos is %f, %f we are currently at %f, %f piderror %f clamped is %f' % (
-            #self.goal.x, self.goal.y, self.px, self.py, piderror, clamped))
+                clamped = max(-linear_speed, min(pidOutput, linear_speed))
+                self.send_speed(clamped, -self.angular_z)
+                rospy.loginfo('The target pos is %f, %f we are currently at %f, %f error %f int %f derivative %f clamped is %f' % (
+                self.goal.x, self.goal.y, self.px, self.py, error, intergral, derivative, clamped))
 
 
         # for x in range(1000):
         #     rospy.sleep(0.005)
         #     self.send_speed(linear_speed*((1000-x)/1000.0),0)
 
-        # self.send_speed(0,0)
+        self.send_speed(0,0)
 
 
         rospy.loginfo("Move Done!")
 
-        self.send_speed(0,0)
 
     def rotate(self, angle, aspeed):
         """
@@ -190,9 +192,10 @@ class Lab3:
         # rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
         # rospy.loginfo("Goal Pos: " + str(goal.x) + " AND " + str(goal.y))
 
-        # rospy.loginfo("Going to intital angle: "+ str(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y)))
-        # self.rotate(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y), ROTATION_SPEED)
-        # rospy.loginfo("initial ended at this angle: " + str(self.pth))
+        rospy.loginfo("Going to intital angle: "+ str(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y)))
+        self.rotate(angle_to_goal(self.px,self.py,self.goal.x,self.goal.y), ROTATION_SPEED)
+        rospy.loginfo("initial ended at this angle: " + str(self.pth))
+        rospy.sleep(0.5)
         rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,self.goal.x,self.goal.y)))
         self.drive(dist_between(self.px,self.py,self.goal.x,self.goal.y), DRIVE_SPEED)
         # rospy.loginfo("Going to final angle: " + str(orientation_to_yaw(msg.pose.orientation)))
@@ -211,6 +214,7 @@ class Lab3:
         self.py = msg.pose.pose.position.y
         self.pth = orientation_to_yaw(msg.pose.pose.orientation)
         self.newOdomReady = True
+        self.newOdomReady2 = True
 
     def arc_to(self, msg):
         """
