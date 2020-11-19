@@ -278,9 +278,13 @@ class PathPlanner:
         came_from[start] = None
         cost_so_far = {}
         cost_so_far[start] = 0
+        #Path Visualization
+        visualize_path = []
 
         while not frontier.empty():
             current = frontier.get()
+            #Path Visualization
+            visualize_path.append(current)
 
             if current == goal:
                 break
@@ -300,6 +304,23 @@ class PathPlanner:
                     priority = new_cost + PathPlanner.euclidean_distance(neighbour[0],neighbour[1],goal[0],goal[1])
                     frontier.put(neighbour,priority)
                     came_from[neighbour] = current
+
+        #Path Visualization
+        for x in range(mapdata.info.height):
+            for y in range(mapdata.info.width):
+                world_point = PathPlanner.grid_to_world(mapdata, x, y)
+                visualize_path.append(world_point)
+
+        #Path Visualization
+        ## Create a GridCells message and publish it
+        # message for visualizing cells in the visualize_path list
+        pvis = GridCells()
+        pvis.cell_width = mapdata.info.resolution
+        pvis.cell_height = mapdata.info.resolution
+        pvis.cells = visualize_path
+        pvis.header = mapdata.header
+        self.pubCspace.publish(pvis)
+
 
         currPos = goal
         finalPath = []
