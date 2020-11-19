@@ -3,7 +3,7 @@
 import math
 import rospy
 import sys
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Odometry, Path
 from nav_msgs.srv import GetMap, GetPlan
 from geometry_msgs.msg import PoseStamped, Twist, Vector3, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
@@ -24,6 +24,8 @@ class Lab3:
         rospy.init_node('lab3', anonymous=True)
         ### Tell ROS that this node publishes Twist messages on the '/cmd_vel' topic
         self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+
+        self.pathPub = rospy.Publisher('path', Path, queue_size=10)
 
         ### Tell ROS that this node subscribes to Odometry messages on the '/odom' topic
         ### When a message is received, call self.update_odometry
@@ -50,6 +52,15 @@ class Lab3:
         #Request Plan
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
         get_plan_obj = path_planner(curr_pos, msg, TOLERANCE)
+
+
+        #publihs plan
+        # Path Visualization
+        self.pathPub.publish(get_plan_obj.plan)
+        rospy.loginfo(get_plan_obj.plan)
+        rospy.loginfo("Published this to /path")
+
+        get_plan_obj.plan.poses.pop(0)
         waypoints = get_plan_obj.plan.poses
 
         rospy.loginfo(waypoints)
@@ -198,10 +209,11 @@ class Lab3:
         rospy.sleep(0.5)
         rospy.loginfo("Going distance of: " + str(dist_between(self.px,self.py,self.goal.x,self.goal.y)))
         self.drive(dist_between(self.px,self.py,self.goal.x,self.goal.y), DRIVE_SPEED)
-        # rospy.loginfo("Going to final angle: " + str(orientation_to_yaw(msg.pose.orientation)))
-        # self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
-        # rospy.loginfo("final ended at this angle: " + str(self.pth))
-        rospy.loginfo("distance between robot and goal: " + str(dist_between(self.goal.x,self.goal.y,self.px,self.py)))
+        rospy.sleep(0.5)
+        # # rospy.loginfo("Going to final angle: " + str(orientation_to_yaw(msg.pose.orientation)))
+        # # self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
+        # # rospy.loginfo("final ended at this angle: " + str(self.pth))
+        # rospy.loginfo("distance between robot and goal: " + str(dist_between(self.goal.x,self.goal.y,self.px,self.py)))
 
     def update_odometry(self, msg):
         """

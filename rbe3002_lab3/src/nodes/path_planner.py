@@ -23,6 +23,7 @@ class PathPlanner:
         # The topic is "/path_planner/cspace", the message type is GridCells
         self.pubCspace = rospy.Publisher("/path_planner/cspace", GridCells, queue_size=10)
         ## Create publishers for A* (expanded cells, frontier, ...)
+        self.pubVisited = rospy.Publisher("/path_planner/visited", GridCells, queue_size=10)
         ## Choose a the topic names, the message type is GridCells
         # TODO
         ## Initialize the request counter
@@ -112,6 +113,7 @@ class PathPlanner:
             orient = Quaternion(q[0], q[1], q[2], q[3])
             single_pose.pose.position = pos
             single_pose.pose.orientation = orient
+            single_pose.header = mapdata.header
             posestamp_list.append(single_pose)
         return posestamp_list
 
@@ -278,9 +280,15 @@ class PathPlanner:
         came_from[start] = None
         cost_so_far = {}
         cost_so_far[start] = 0
+        #Path Visualization
+        visualize_path = []
 
         while not frontier.empty():
             current = frontier.get()
+            #Path Visualization
+            visualize_path.append(current)
+            rospy.loginfo("Adding %f %f to visited list" %(current[0], current[1]))
+
             if current == goal:
                 break
 
@@ -300,6 +308,45 @@ class PathPlanner:
                     frontier.put(neighbour,priority)
                     came_from[neighbour] = current
 
+                # Path Visualization
+                visitedCells = []
+                for cell in visualize_path:
+                    world_point = PathPlanner.grid_to_world(mapdata, cell[0], cell[1])
+                    # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
+                    visitedCells.append(world_point)
+
+                # Path Visualization
+                ## Create a GridCells message and publish it
+                # message for visualizing cells in the visualize_path list
+                pvis = GridCells()
+                pvis.cell_width = mapdata.info.resolution
+                pvis.cell_height = mapdata.info.resolution
+                pvis.cells = visitedCells
+                pvis.header = mapdata.header
+                self.pubVisited.publish(pvis)
+                rospy.loginfo(pvis)
+                rospy.loginfo("Published this to /visited")
+
+        visualize_path.append(goal)
+        # Path Visualization
+        visitedCells = []
+        for cell in visualize_path:
+            world_point = PathPlanner.grid_to_world(mapdata, cell[0], cell[1])
+            # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
+            visitedCells.append(world_point)
+
+        # Path Visualization
+        ## Create a GridCells message and publish it
+        # message for visualizing cells in the visualize_path list
+        pvis = GridCells()
+        pvis.cell_width = mapdata.info.resolution
+        pvis.cell_height = mapdata.info.resolution
+        pvis.cells = visitedCells
+        pvis.header = mapdata.header
+        self.pubVisited.publish(pvis)
+        rospy.loginfo(pvis)
+        rospy.loginfo("Published this to /visited")
+
         currPos = goal
         finalPath = []
         finalPath.append(goal)
@@ -309,29 +356,29 @@ class PathPlanner:
 
         finalPath.reverse()
         rospy.loginfo(finalPath)
-        # rospy.loginfo("A* FINAL PATH:")
 
+        # rospy.loginfo("A* FINAL PATH:")
         return finalPath
 
-        frontier = priority_queue
-        frontier.put(start, 0)
-        came_from = {}
-        cost_so_far = {}
-        came_from[start] = None
-        cost_so_far[start] = 0
-
-        while not frontier.empty():
-            current = frontier.get()
-            if current == goal:
-                break
-
-            for next_n in graph.neighbours(current):
-                new_cost = cost_so_far[current] + graph.cost(current, next_n)
-                if next_n not in cost_so_far or new_cost < cost_so_far[next_n]:
-                    cost_so_far[next_n] = new_cost
-                    priority = new_cost + heuristic(goal, next_n)
-                    frontier.put(next_n, priority)
-                    came_from[next_n] = current
+        # frontier = priority_queue
+        # frontier.put(start, 0)
+        # came_from = {}
+        # cost_so_far = {}
+        # came_from[start] = None
+        # cost_so_far[start] = 0
+        #
+        # while not frontier.empty():
+        #     current = frontier.get()
+        #     if current == goal:
+        #         break
+        #
+        #     for next_n in graph.neighbours(current):
+        #         new_cost = cost_so_far[current] + graph.cost(current, next_n)
+        #         if next_n not in cost_so_far or new_cost < cost_so_far[next_n]:
+        #             cost_so_far[next_n] = new_cost
+        #             priority = new_cost + heuristic(goal, next_n)
+        #             frontier.put(next_n, priority)
+        #             came_from[next_n] = current
 
 
 
@@ -408,7 +455,7 @@ class PathPlanner:
         path_message = Path()
         rospy.loginfo("The path is: " + str(path))
         path_message.poses = PathPlanner.path_to_poses(mapdata, path)
-        path_message.poses.pop(0)
+        path_message.header = mapdata.header
         rospy.loginfo("path_message: " + str(path_message))
         return path_message
 
