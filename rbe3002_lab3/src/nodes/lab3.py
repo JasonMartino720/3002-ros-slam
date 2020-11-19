@@ -87,9 +87,9 @@ class Lab3:
         :param linear_speed [float] [m/s] The forward linear speed.
         """
         TOLERANCE = 0.00008 #meters
-        Kp = 15.0
+        Kp = 14.140
         Ki = 0.0
-        Kd = 5.0
+        Kd = 12.315
 
         self.ix = self.px
         self.iy = self.py
