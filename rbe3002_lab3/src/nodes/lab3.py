@@ -188,14 +188,17 @@ class Lab3:
         self.send_speed(0, 0)
 
     def drive_and_turn(self, angular_speed_lim, linear_speed_lim, goal):
-        drive_Kp = 0.0
-        drive_Ki = 0.0
-        drive_Kd = 0.0
-        turn_Kp = 0.0
-        turn_Ki = 0.0
-        turn_Kd = 0.0
+        drive_Kp = 2.140
+        # drive_Kp = 0.440
+        # drive_Ki = 0.05
+        drive_Ki = 0
+        drive_Kd = 4
+        turn_Kp = -22.5
+        # turn_Ki = -1
+        turn_Ki = 0
+        turn_Kd = -12
 
-        TOLERANCE = 0.0005 #in meters from goal
+        TOLERANCE = 0.01 #in meters from goal
 
         # curr_abs_angle = self.absolute_angle(bool(goalAngle > 0))
 
@@ -209,7 +212,7 @@ class Lab3:
 
             if (self.newOdomReady):
                 self.newOdomReady = False
-                turn_target_angle = angle_to_goal(self.px,self.py,goal.x,goal.y)
+                turn_target_angle = angle_to_goal(goal.x, goal.y, self.px, self.py)
                 turn_error = self.pth - turn_target_angle
 
                 turn_integral += turn_error
