@@ -33,9 +33,9 @@ class Lab3:
 
         ### Tell ROS that this node subscribes to PoseStamped messages on the '/move_base_simple/goal' topic
         ### When a message is received, call self.go_to
-        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.test)
+        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.execute_path)
 
-    def test(self, msg):
+    def execute_path(self, msg):
         TOLERANCE = 0.1
         rospy.loginfo("Requesting the path")
 
@@ -46,8 +46,6 @@ class Lab3:
         curr_pos.pose.position = Point(self.px, self.py, 0)
         quat = quaternion_from_euler(0, 0, self.pth)
         curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-        # rospy.loginfo("Creating Msg w/ CurPos: " + str(curr_pos))
-        # rospy.loginfo("Creating Msg w/ Goal: " + str(msg))
 
         # Request Plan
         path_planner = rospy.ServiceProxy('plan_path', GetPlan)
@@ -104,16 +102,7 @@ class Lab3:
         self.ix = self.px
         self.iy = self.py
 
-        # for x in range(1000):
-        #     rospy.sleep(0.005)
-        #     self.send_speed(linear_speed*(x/1000.0),0)
-        # self.send_speed(linear_speed,0)
-
-        # while(dist_between(self.ix,self.iy,self.px,self.py) < distance - TOLERANCE):
-        #     rospy.sleep(0.005)
-        #     self.send_speed(linear_speed, 0)
-        error = dist_between(self.goal.x, self.goal.y, self.ix, self.iy) - dist_between(self.ix, self.iy, self.px,
-                                                                                        self.py)
+        error = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
         lastError = 0
         intergral = 0
         # while True:
@@ -136,11 +125,7 @@ class Lab3:
                     'The target pos is %f, %f we are currently at %f, %f error %f int %f derivative %f clamped is %f' % (
                         self.goal.x, self.goal.y, self.px, self.py, error, intergral, derivative, clamped))
 
-        # for x in range(1000):
-        #     rospy.sleep(0.005)
-        #     self.send_speed(linear_speed*((1000-x)/1000.0),0)
-
-        self.send_speed(0, 0)
+        self.send_speed(0,0)
 
         rospy.loginfo("Move Done!")
 
@@ -152,10 +137,8 @@ class Lab3:
         """
         TOLERANCE = 0.0001  # rad
 
-        goalAngle = normalize_angle(angle + math.pi)
-        # goalAngle = angle+math.pi
+        goalAngle = normalize_angle(angle+math.pi)
 
-        # self.send_speed(0, aspeed)
         Kp = -12.5
         Ki = -1
         Kd = -6
@@ -276,8 +259,6 @@ class Lab3:
         MAX_DRIVE_SPEED = 0.22  # Meters/sec
 
         self.goal = msg.pose.position
-        # rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
-        # rospy.loginfo("Goal Pos: " + str(goal.x) + " AND " + str(goal.y))
 
         rospy.loginfo("Going to goal using drive and turn")
         self.drive_and_turn(MAX_ROTATION_SPEED, MAX_DRIVE_SPEED, msg.pose.position)
@@ -290,10 +271,6 @@ class Lab3:
         # rospy.loginfo("Going distance of: " + str(dist_between(self.px, self.py, self.goal.x, self.goal.y)))
         # self.drive(dist_between(self.px, self.py, self.goal.x, self.goal.y), DRIVE_SPEED)
         rospy.sleep(0.5)
-        # # rospy.loginfo("Going to final angle: " + str(orientation_to_yaw(msg.pose.orientation)))
-        # # self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
-        # # rospy.loginfo("final ended at this angle: " + str(self.pth))
-        # rospy.loginfo("distance between robot and goal: " + str(dist_between(self.goal.x,self.goal.y,self.px,self.py)))
 
     def update_odometry(self, msg):
         """

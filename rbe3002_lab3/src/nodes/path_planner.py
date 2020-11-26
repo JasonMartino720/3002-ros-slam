@@ -25,10 +25,7 @@ class PathPlanner:
         ## Create publishers for A* (expanded cells, frontier, ...)
         self.pubVisited = rospy.Publisher("/path_planner/visited", GridCells, queue_size=10)
         ## Choose a the topic names, the message type is GridCells
-        # TODO
-        ## Initialize the request counter
-        # TODO
-        ## Sleep to allow roscore to do some housekeeping
+
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
@@ -83,8 +80,6 @@ class PathPlanner:
 
         x = int((wp.x - mapdata.info.origin.position.x) / mapdata.info.resolution)
         y = int((wp.y - mapdata.info.origin.position.y) / mapdata.info.resolution)
-        # rospy.loginfo("input for worldpoint: " + str(wp.x) + ", " + str(wp.y))
-        # rospy.loginfo("world_to_grid x, y: " + str(x) + ", " + str(y))
 
         grid_coord = (x, y)
 
@@ -98,7 +93,6 @@ class PathPlanner:
         :param  path   [[(int,int)]]   The path as a list of tuples (cell coordinates).
         :return        [[PoseStamped]] The path as a list of PoseStamped (world coordinates).
         """
-        ### REQUIRED CREDIT
         # rospy.loginfo("converting path into a list of PoseStamped")
         posestamp_list = []
         for i in range(len(path)):
@@ -261,11 +255,6 @@ class PathPlanner:
         msg.cells = gridCellsList
         msg.header = mapdata.header
         self.pubCspace.publish(msg)
-        # rospy.sleep(0.1)
-        # self.pubCspace.publish(msg)
-        # rospy.sleep(0.1)
-        # self.pubCspace.publish(msg)
-        # rospy.loginfo("GridCells: " + str(msg))
         mapdata.data = paddedArray
 
         return mapdata
@@ -360,30 +349,6 @@ class PathPlanner:
         # rospy.loginfo("A* FINAL PATH:")
         return finalPath
 
-        # frontier = priority_queue
-        # frontier.put(start, 0)
-        # came_from = {}
-        # cost_so_far = {}
-        # came_from[start] = None
-        # cost_so_far[start] = 0
-        #
-        # while not frontier.empty():
-        #     current = frontier.get()
-        #     if current == goal:
-        #         break
-        #
-        #     for next_n in graph.neighbours(current):
-        #         new_cost = cost_so_far[current] + graph.cost(current, next_n)
-        #         if next_n not in cost_so_far or new_cost < cost_so_far[next_n]:
-        #             cost_so_far[next_n] = new_cost
-        #             priority = new_cost + heuristic(goal, next_n)
-        #             frontier.put(next_n, priority)
-        #             came_from[next_n] = current
-
-
-
-
-
     @staticmethod
     def optimize_path(path):
         """
@@ -418,23 +383,6 @@ class PathPlanner:
 
         return path
 
-        # #Divide lenght by two since leng returns, counting both X and Y
-        # for i in range(0, len(path) - 1):
-        #     rospy.loginfo("Current Point: " + str(i))
-        #     curr_heading = PathPlanner.round_to_45(
-        #         math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
-        #     rospy.loginfo("Current Heading: " + str(curr_heading))
-        #     last_heading = PathPlanner.round_to_45(
-        #         math.degrees(math.atan2((path[i][1] - path[i - 1][1]), (path[i][0] - path[i - 1][0]))))
-        #     rospy.loginfo("Last Heading: " + str(last_heading))
-        #
-        #     if curr_heading == last_heading:
-        #         pathCopy.pop(i)
-        #         rospy.loginfo("Popped: " + str(i))
-        #         i = i-1
-        #
-        # return pathCopy
-
     @staticmethod
     def round_to_45(value):
         """
@@ -468,8 +416,8 @@ class PathPlanner:
         ## Request the map
         ## In case of error, return an empty path
         mapdata = PathPlanner.request_map()
-        # if mapdata is None:
-        #     return Path()
+        if mapdata is None:
+            return Path()
 
         # ## Calculate the C-space and publish it
         rospy.wait_for_service('static_map', timeout=None)
