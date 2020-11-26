@@ -187,26 +187,66 @@ class Lab3:
         rospy.loginfo("Rotate Done!")
         self.send_speed(0, 0)
 
-    def drive_and_turn(self, linear_speed, goal_msg, target_angle, angular_speed):
-        drive_kP = 0.0
-        drive_kI = 0.0
-        drive_kD = 0.0
-        turn_kP = 0.0
-        turn_kI = 0.0
-        turn_kD = 0.0
+    def drive_and_turn(self, angular_speed_lim, linear_speed_lim, goal):
+        drive_Kp = 0.0
+        drive_Ki = 0.0
+        drive_Kd = 0.0
+        turn_Kp = 0.0
+        turn_Ki = 0.0
+        turn_Kd = 0.0
 
-        drive_TOLERANCE = 0.0005
-        turn_TOLERANCE = 0.0001
+        TOLERANCE = 0.0005 #in meters from goal
 
-        curr_abs_angle = self.absolute_angle(bool(target_angle > 0))
+        # curr_abs_angle = self.absolute_angle(bool(goalAngle > 0))
 
-        drive_error = dist_between(goal_msg.x, goal_msg.y, self.px, self.py)
-        turn_error = curr_abs_angle - target_angle
+        turn_integral = 0
+        turn_lastError = 0
 
         drive_lastError = 0
         drive_integral = 0
-        turn_lastError = 0
-        turn_integral = 0
+
+        while not dist_between(goal.x, goal.y, self.px, self.py) < TOLERANCE:
+
+            if (self.newOdomReady):
+                self.newOdomReady = False
+                turn_target_angle = angle_to_goal(self.px,self.py,goal.x,goal.y)
+                turn_error = self.pth - turn_target_angle
+
+                turn_integral += turn_error
+                turn_integral = max(-5, min(turn_integral, 5))
+
+                turn_derivative = turn_error - turn_lastError
+                turn_lastError = turn_error
+
+                turn_pidOutput = (turn_Kp * turn_error) + (turn_Ki * turn_integral) + (turn_Kd * turn_derivative)
+
+                turn_clamped = max(-angular_speed_lim, min(turn_pidOutput, angular_speed_lim))
+                rospy.loginfo(
+                    'The target orientation is %f we are currently at %f the error is %f, the intergeral is %f, deriviate is %f -> clamped is %f' % (
+                        turn_target_angle, self.pth, turn_error, turn_integral, turn_derivative, turn_clamped))
+
+                #Drive Section Below
+
+                drive_error = dist_between(goal.x, goal.y, self.px, self.py)
+
+                drive_integral += drive_error
+                drive_integral = max(-1, min(drive_integral, 1))
+                drive_derivative = drive_error - drive_lastError
+                drive_lastError = drive_error
+
+                drive_pidOutput = (drive_Kp * drive_error) + (drive_Ki * drive_integral) + (drive_Kd * drive_derivative)
+
+                drive_clamped = max(-linear_speed_lim, min(drive_pidOutput, linear_speed_lim))
+
+                rospy.loginfo(
+                    'The target pos is %f, %f we are currently at %f, %f error %f int %f derivative %f clamped is %f' % (
+                        self.goal.x, self.goal.y, self.px, self.py, drive_error, drive_integral, drive_derivative, drive_clamped))
+
+                self.send_speed(drive_clamped, turn_clamped)
+
+        self.send_speed(0, 0)
+
+
 
     def absolute_angle(self, positive):
         if positive:
@@ -229,19 +269,23 @@ class Lab3:
         """
 
         # From: https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
-        ROTATION_SPEED = 1.34  # Rad/sec
-        DRIVE_SPEED = 0.22  # Meters/sec
+        MAX_ROTATION_SPEED = 1.34  # Rad/sec
+        MAX_DRIVE_SPEED = 0.22  # Meters/sec
 
         self.goal = msg.pose.position
         # rospy.loginfo("Curr Pos: " + str(self.px) + " AND " + str(self.py))
         # rospy.loginfo("Goal Pos: " + str(goal.x) + " AND " + str(goal.y))
 
-        rospy.loginfo("Going to intital angle: " + str(angle_to_goal(self.px, self.py, self.goal.x, self.goal.y)))
-        self.rotate(angle_to_goal(self.px, self.py, self.goal.x, self.goal.y), ROTATION_SPEED)
-        rospy.loginfo("initial ended at this angle: " + str(self.pth))
+        rospy.loginfo("Going to goal using drive and turn")
+        self.drive_and_turn(MAX_ROTATION_SPEED, MAX_DRIVE_SPEED, msg.pose.position)
         rospy.sleep(0.5)
-        rospy.loginfo("Going distance of: " + str(dist_between(self.px, self.py, self.goal.x, self.goal.y)))
-        self.drive(dist_between(self.px, self.py, self.goal.x, self.goal.y), DRIVE_SPEED)
+
+        # rospy.loginfo("Going to intital angle: " + str(angle_to_goal(self.px, self.py, self.goal.x, self.goal.y)))
+        # self.rotate(angle_to_goal(self.px, self.py, self.goal.x, self.goal.y), ROTATION_SPEED)
+        # rospy.loginfo("initial ended at this angle: " + str(self.pth))
+        # rospy.sleep(0.5)
+        # rospy.loginfo("Going distance of: " + str(dist_between(self.px, self.py, self.goal.x, self.goal.y)))
+        # self.drive(dist_between(self.px, self.py, self.goal.x, self.goal.y), DRIVE_SPEED)
         rospy.sleep(0.5)
         # # rospy.loginfo("Going to final angle: " + str(orientation_to_yaw(msg.pose.orientation)))
         # # self.rotate(orientation_to_yaw(msg.pose.orientation), ROTATION_SPEED)
