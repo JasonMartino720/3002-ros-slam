@@ -3,8 +3,8 @@
 import math
 import rospy
 from nav_msgs.srv import GetPlan, GetMap
-from nav_msgs.msg import GridCells, OccupancyGrid, Path
-from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
+from nav_msgs.msg import GridCells, Path
+from geometry_msgs.msg import Point, PoseStamped, Quaternion
 from tf_conversions.posemath import transformations
 from priority_queue import PriorityQueue
 
@@ -362,8 +362,6 @@ class PathPlanner:
         last_heading = 0
         rmvIndexList = []
 
-        pathCopy = path
-
         rospy.loginfo("Original Path Length: " + str(len(path)))
         for i in range(1, len(path)-1):
             rospy.loginfo("Current Point: " + str(i))
@@ -422,7 +420,6 @@ class PathPlanner:
         # ## Calculate the C-space and publish it
         rospy.wait_for_service('static_map', timeout=None)
         cspacedata = self.calc_cspace(mapdata, 1)
-        rospy.sleep(0.10)
         # ## Execute A*
         start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
         goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
