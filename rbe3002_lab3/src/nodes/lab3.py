@@ -255,7 +255,7 @@ class Lab3:
         """
 
         # From: https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
-        MAX_ROTATION_SPEED = 1.34  # Rad/sec
+        MAX_ROTATION_SPEED = 2.84  # Rad/sec
         MAX_DRIVE_SPEED = 0.22  # Meters/sec
 
         self.goal = msg.pose.position
