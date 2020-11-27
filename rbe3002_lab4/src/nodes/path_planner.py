@@ -7,6 +7,7 @@ from nav_msgs.msg import GridCells, Path
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
 from tf_conversions.posemath import transformations
 from priority_queue import PriorityQueue
+from map import Map
 
 class PathPlanner:
     def __init__(self):

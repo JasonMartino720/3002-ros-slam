@@ -10,7 +10,6 @@ class Map:
 
         return new_x, new_y
 
-    @staticmethod
     def neighbors_of_4(self, x, y):
         """
         Returns the walkable 4-neighbors cells of (x,y) in the occupancy grid.
@@ -32,7 +31,6 @@ class Map:
 
         return return_list
 
-    @staticmethod
     def neighbors_of_8(self, x, y):
         """
         Returns the walkable 8-neighbors cells of (x,y) in the occupancy grid.
