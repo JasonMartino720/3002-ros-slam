@@ -29,15 +29,6 @@ class PathPlanner:
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
-    @staticmethod
-    def grid_to_index(mapdata, x, y):
-        """
-        Returns the index corresponding to the given (x,y) coordinates in the occupancy grid.
-        :param x [int] The cell X coordinate.
-        :param y [int] The cell Y coordinate.
-        :return  [int] The index.
-        """
-        return y * mapdata.info.width + x
 
     @staticmethod
     def euclidean_distance(x1, y1, x2, y2):
@@ -112,84 +103,6 @@ class PathPlanner:
         return posestamp_list
 
     @staticmethod
-    def is_cell_walkable(mapdata, x, y):
-        """
-        A cell is walkable if all of these conditions are true:
-        1. It is within the boundaries of the grid;
-        2. It is free (not unknown, not occupied by an obstacle)
-        :param mapdata [OccupancyGrid] The map information.
-        :param x       [int]           The X coordinate in the grid.
-        :param y       [int]           The Y coordinate in the grid.
-        :return        [boolean]       True if the cell is walkable, False otherwise
-        """
-        walkable = False
-
-        ### REQUIRED CREDIT
-        "if the x and y coordinates are out of bounds"
-        if 0 <= x < mapdata.info.width - 1 and mapdata.info.height - 1 > y >= 0:
-            "if the data in the cell is less than 0.196(threshold of the free cell)"
-            if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] < 0.196:
-                return True
-        return False
-
-    @staticmethod
-    def neighbors_of_4(mapdata, x, y):
-        """
-        Returns the walkable 4-neighbors cells of (x,y) in the occupancy grid.
-        :param mapdata [OccupancyGrid] The map information.
-        :param x       [int]           The X coordinate in the grid.
-        :param y       [int]           The Y coordinate in the grid.
-        :return        [[(int,int)]]   A list of walkable 4-neighbors.
-        """
-
-        if x < 0 | x > mapdata.info.width - 1 | y < 0 | y > mapdata.info.height - 1:
-            raise ValueError("input cell is not within the bounds of the map")
-
-        returnList = []
-
-        if x != 0:
-            if PathPlanner.is_cell_walkable(mapdata, x - 1, y):
-                returnList.append((x - 1, y))
-        if x != mapdata.info.width - 1:
-            if PathPlanner.is_cell_walkable(mapdata, x + 1, y):
-                returnList.append((x + 1, y))
-        if y != 0:
-            if PathPlanner.is_cell_walkable(mapdata, x, y - 1):
-                returnList.append((x, y - 1))
-        if y != mapdata.info.height - 1:
-            if PathPlanner.is_cell_walkable(mapdata, x, y + 1):
-                returnList.append((x, y + 1))
-
-        return returnList
-
-    @staticmethod
-    def neighbors_of_8(mapdata, x, y):
-        """
-        Returns the walkable 8-neighbors cells of (x,y) in the occupancy grid.
-        :param mapdata [OccupancyGrid] The map information.
-        :param x       [int]           The X coordinate in the grid.
-        :param y       [int]           The Y coordinate in the grid.
-        :return        [[(int,int)]]   A list of walkable 8-neighbors.
-        """
-        # This already checks for in-boundness
-        returnList = PathPlanner.neighbors_of_4(mapdata, x, y)
-
-        if x != 0 and y != 0:
-            if PathPlanner.is_cell_walkable(mapdata, x - 1, y - 1):
-                returnList.append((x - 1, y - 1))
-        if x != mapdata.info.width - 1 and y != 0:
-            if PathPlanner.is_cell_walkable(mapdata, x + 1, y - 1):
-                returnList.append((x + 1, y - 1))
-        if y != mapdata.info.height - 1 and x != 0:
-            if PathPlanner.is_cell_walkable(mapdata, x - 1, y + 1):
-                returnList.append((x - 1, y + 1))
-        if x != mapdata.info.width - 1 and y != mapdata.info.height - 1:
-            if PathPlanner.is_cell_walkable(mapdata, x + 1, y + 1):
-                returnList.append((x + 1, y + 1))
-
-        return returnList
-
-    @staticmethod
     def request_map():
         """
         Requests the map from the map server.
@@ -204,17 +117,6 @@ class PathPlanner:
         except rospy.ServiceException, e:
             return None
 
-    @staticmethod
-    def force_inbound(mapdata, curr_x, curr_y):
-        maxY = mapdata.info.height - 1
-        maxX = mapdata.info.width - 1
-        minX = 0
-        minY = 0
-
-        newX = max(minX, min(curr_x, maxX))
-        newY = max(minY, min(curr_y, maxY))
-
-        return newX, newY
 
     def calc_cspace(self, mapdata, padding):
         """
