@@ -21,7 +21,7 @@ class PathPlanner:
         rospy.init_node("path_planner")
         # Create a new service called "plan_path" that accepts messages of
         # type GetPlan and calls self.plan_path() when a message is received
-        self.pathService = rospy.Service('plan_path', GetPlan, self.plan_path)
+        self.pathService = rospy.Service('plan_path', GetPlan, self.get_path_to_point)
         # Create a publisher for the C-space (the enlarged occupancy grid)
         # The topic is "/path_planner/cspace", the message type is GridCells
         self.pubCspace = rospy.Publisher("/path_planner/cspace", GridCells, queue_size=10)

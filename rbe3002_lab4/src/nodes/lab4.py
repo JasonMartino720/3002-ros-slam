@@ -8,7 +8,7 @@ from geometry_msgs.msg import PoseStamped, Twist, Vector3, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 
-class Lab3:
+class Lab4:
 
     def __init__(self):
         """
@@ -20,7 +20,7 @@ class Lab3:
 
         ### REQUIRED CREDIT
         ### Initialize node, name it 'lab3'
-        rospy.init_node('lab3', anonymous=True)
+        rospy.init_node('lab4', anonymous=True)
         ### Tell ROS that this node publishes Twist messages on the '/cmd_vel' topic
         self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 
@@ -278,4 +278,4 @@ def angle_to_goal(curr_x, curr_y, goal_x, goal_y):
     return normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x)))
 
 if __name__ == '__main__':
-    Lab3().run()
+    Lab4().run()
