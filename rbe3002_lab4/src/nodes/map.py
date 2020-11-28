@@ -7,7 +7,6 @@ class Map:
     def __init__(self):
         self.refresh_map()
 
-
     def refresh_map(self):
         occupancy_grid = self.request_map()
         if occupancy_grid is None:

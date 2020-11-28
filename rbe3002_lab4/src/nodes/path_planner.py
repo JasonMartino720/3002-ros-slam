@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import math
+
 import rospy
-from nav_msgs.srv import GetPlan, GetMap
-from nav_msgs.msg import GridCells, Path
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
+from nav_msgs.msg import GridCells, Path
+from nav_msgs.srv import GetPlan
 from tf_conversions.posemath import transformations
+
 from priority_queue import PriorityQueue
 from map import Map
 
@@ -15,13 +17,13 @@ class PathPlanner:
         """
         Class constructor
         """
-        # create a Map object
-        self.map = Map()
         # Initialize the node and call it "path_planner"
+        rospy.loginfo("Started path planner")
         rospy.init_node("path_planner")
         # Create a new service called "plan_path" that accepts messages of
         # type GetPlan and calls self.plan_path() when a message is received
         self.pathService = rospy.Service('plan_path', GetPlan, self.get_path_to_point)
+
         # Create a publisher for the C-space (the enlarged occupancy grid)
         # The topic is "/path_planner/cspace", the message type is GridCells
         self.pubCspace = rospy.Publisher("/path_planner/cspace", GridCells, queue_size=10)
@@ -31,6 +33,12 @@ class PathPlanner:
 
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
+
+        # create a Map object
+        rospy.loginfo("Calling map obj")
+        self.map = Map()
+        rospy.loginfo("map obj done")
+        rospy.loginfo(self.map)
 
     @staticmethod
     def euclidean_distance(x1, y1, x2, y2):
@@ -254,7 +262,7 @@ class PathPlanner:
         """
         ## Request the map
         ## In case of error, return an empty path
-        if self.map.data is None:
+        if self.map is None:
             rospy.logerr("Path Path called but map data was of type 'None'")
             return Path()
 
@@ -280,6 +288,7 @@ class PathPlanner:
         """
         # mapdata = PathPlanner.request_map()
         # self.calc_cspace(mapdata,1)
+        rospy.loginfo("Path Planner is running")
         rospy.spin()
 
 
