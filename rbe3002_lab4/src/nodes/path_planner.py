@@ -9,12 +9,14 @@ from tf_conversions.posemath import transformations
 from priority_queue import PriorityQueue
 from map import Map
 
+
 class PathPlanner:
     def __init__(self):
         """
         Class constructor
         """
-        # REQUIRED CREDIT
+        # create a Map object
+        self.map = Map()
         # Initialize the node and call it "path_planner"
         rospy.init_node("path_planner")
         # Create a new service called "plan_path" that accepts messages of
@@ -30,7 +32,6 @@ class PathPlanner:
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
-
     @staticmethod
     def euclidean_distance(x1, y1, x2, y2):
         """
@@ -43,8 +44,7 @@ class PathPlanner:
         """
         return math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
 
-    @staticmethod
-    def grid_to_world(mapdata, x, y):
+    def grid_to_world(self, x, y):
         """
         Transforms a cell coordinate in the occupancy grid into a world coordinate.
         :param mapdata [OccupancyGrid] The map information.
@@ -54,15 +54,14 @@ class PathPlanner:
         """
         world_point = Point()
 
-        world_point.x = (x + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.x
-        world_point.y = (y + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.y
+        world_point.x = (x + 0.5) * self.map.info.resolution + self.map.info.origin.position.x
+        world_point.y = (y + 0.5) * self.map.info.resolution + self.map.info.origin.position.y
         # rospy.loginfo("mapdata.info: " + str(mapdata.info))
         # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
         # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
         return world_point
 
-    @staticmethod
-    def world_to_grid(mapdata, wp):
+    def world_to_grid(self, wp):
         """
         Transforms a world coordinate into a cell coordinate in the occupancy grid.
         :param mapdata [OccupancyGrid] The map information.
@@ -70,15 +69,14 @@ class PathPlanner:
         :return        [(int,int)]     The cell position as a tuple.
         """
 
-        x = int((wp.x - mapdata.info.origin.position.x) / mapdata.info.resolution)
-        y = int((wp.y - mapdata.info.origin.position.y) / mapdata.info.resolution)
+        x = int((wp.x - self.map.info.origin.position.x) / self.map.info.resolution)
+        y = int((wp.y - self.map.info.origin.position.y) / self.map.info.resolution)
 
         grid_coord = (x, y)
 
         return grid_coord
 
-    @staticmethod
-    def path_to_poses(mapdata, path):
+    def path_to_poses(self, path):
         """
         Converts the given path into a list of PoseStamped.
         :param mapdata [OccupancyGrid] The map information.
@@ -89,78 +87,19 @@ class PathPlanner:
         posestamp_list = []
         for i in range(len(path)):
             yaw = 0
-            if i < len(path)-1:
+            if i < len(path) - 1:
                 yaw = PathPlanner.round_to_45(
                     math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
             single_pose = PoseStamped()
-            pos = PathPlanner.grid_to_world(mapdata, path[i][0], path[i][1])
+            pos = self.grid_to_world(path[i][0], path[i][1])
             q = transformations.quaternion_from_euler(0, 0, yaw)
             # going back to ros quaternion
             orient = Quaternion(q[0], q[1], q[2], q[3])
             single_pose.pose.position = pos
             single_pose.pose.orientation = orient
-            single_pose.header = mapdata.header
+            single_pose.header = self.map.header
             posestamp_list.append(single_pose)
         return posestamp_list
-
-    @staticmethod
-    def request_map():
-        """
-        Requests the map from the map server.
-        :return [OccupancyGrid] The grid if the service call was successful,
-                                None in case of error.
-        """
-        ### REQUIRED CREDIT
-        rospy.loginfo("Requesting the map")
-        try:
-            map_server = rospy.ServiceProxy('static_map', GetMap)
-            return map_server().map
-        except rospy.ServiceException, e:
-            return None
-
-
-    def calc_cspace(self, mapdata, padding):
-        """
-        Calculates the C-Space, i.e., makes the obstacles in the map thicker.
-        Publishes the list of cells that were added to the original map.
-        :param mapdata [OccupancyGrid] The map data.
-        :param padding [int]           The number of cells around the obstacles.
-        :return        [OccupancyGrid] The C-Space.self.pubCspace.publish(msg)
-        """
-        OBSTACLE_THRESH = 90
-        rospy.loginfo("Calculating C-Space")
-
-        paddedArray = list(mapdata.data)
-
-        ## Go through each cell in the occupancy grid
-        for x in range(mapdata.info.height):
-            for y in range(mapdata.info.width):
-                ## Inflate the obstacles where necessary
-                if mapdata.data[PathPlanner.grid_to_index(mapdata, x, y)] > OBSTACLE_THRESH:
-                    paddedArray[self.grid_to_index(mapdata, x, y)] = 100
-                    for neighbor in PathPlanner.neighbors_of_8(mapdata, x, y):
-                        x3, y3 = PathPlanner.force_inbound(mapdata, neighbor[0], neighbor[1])
-                        paddedArray[self.grid_to_index(mapdata, x3, y3)] = 100
-        paddedArray = tuple(paddedArray)
-        gridCellsList = []
-
-        for x in range(mapdata.info.height):
-            for y in range(mapdata.info.width):
-                ## Inflate the obstacles where necessary
-                if paddedArray[PathPlanner.grid_to_index(mapdata, x, y)] > OBSTACLE_THRESH:
-                    world_point = PathPlanner.grid_to_world(mapdata, x, y)
-                    gridCellsList.append(world_point)
-
-        ## Create a GridCells message and publish it
-        msg = GridCells()
-        msg.cell_width = mapdata.info.resolution
-        msg.cell_height = mapdata.info.resolution
-        msg.cells = gridCellsList
-        msg.header = mapdata.header
-        self.pubCspace.publish(msg)
-        mapdata.data = paddedArray
-
-        return mapdata
 
     def a_star(self, mapdata, start, goal):
         ### REQUIRED CREDIT
@@ -168,18 +107,16 @@ class PathPlanner:
         frontier = PriorityQueue()
         frontier.put(start, 0)
 
-        came_from = {}
-        came_from[start] = None
-        cost_so_far = {}
-        cost_so_far[start] = 0
-        #Path Visualization
+        came_from = {start: None}
+        cost_so_far = {start: 0}
+        # Path Visualization
         visualize_path = []
 
         while not frontier.empty():
             current = frontier.get()
-            #Path Visualization
+            # Path Visualization
             visualize_path.append(current)
-            rospy.loginfo("Adding %f %f to visited list" %(current[0], current[1]))
+            rospy.loginfo("Adding %f %f to visited list" % (current[0], current[1]))
 
             if current == goal:
                 break
@@ -189,15 +126,16 @@ class PathPlanner:
                 # rospy.loginfo(str(cost_so_far[current]))
                 # rospy.loginfo(str(current))
                 a = cost_so_far[current]
-                b = PathPlanner.euclidean_distance(current[0],current[1],neighbour[0],neighbour[1])
+                b = PathPlanner.euclidean_distance(current[0], current[1], neighbour[0], neighbour[1])
                 # rospy.loginfo(a)
                 # rospy.loginfo(b)
-                new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0],current[1],neighbour[0],neighbour[1])
+                new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0], current[1], neighbour[0],
+                                                                                 neighbour[1])
                 new_cost = a + b
                 if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour]:
                     cost_so_far[neighbour] = new_cost
-                    priority = new_cost + PathPlanner.euclidean_distance(neighbour[0],neighbour[1],goal[0],goal[1])
-                    frontier.put(neighbour,priority)
+                    priority = new_cost + PathPlanner.euclidean_distance(neighbour[0], neighbour[1], goal[0], goal[1])
+                    frontier.put(neighbour, priority)
                     came_from[neighbour] = current
 
                 # Path Visualization
@@ -266,9 +204,10 @@ class PathPlanner:
         rmvIndexList = []
 
         rospy.loginfo("Original Path Length: " + str(len(path)))
-        for i in range(1, len(path)-1):
+        for i in range(1, len(path) - 1):
             rospy.loginfo("Current Point: " + str(i))
-            curr_heading = PathPlanner.round_to_45(math.degrees(math.atan2((path[i+1][1] - path[i][1]), (path[i+1][0] - path[i][0]))))
+            curr_heading = PathPlanner.round_to_45(
+                math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
             rospy.loginfo("Current Heading: " + str(curr_heading))
             rospy.loginfo("Last Heading: " + str(last_heading))
 
@@ -292,8 +231,7 @@ class PathPlanner:
         """
         return round(value / 45.0) * 45.0
 
-    @staticmethod
-    def path_to_message(mapdata, path):
+    def path_to_message(self, path):
         """
         Takes a path on the grid and returns a Path message.
         :param path [[(int,int)]] The path on the grid (a list of tuples)
@@ -303,12 +241,12 @@ class PathPlanner:
         rospy.loginfo("Returning a Path message")
         path_message = Path()
         rospy.loginfo("The path is: " + str(path))
-        path_message.poses = PathPlanner.path_to_poses(mapdata, path)
-        path_message.header = mapdata.header
+        path_message.poses = PathPlanner.path_to_poses(self, path)
+        path_message.header = self.map.header
         rospy.loginfo("path_message: " + str(path_message))
         return path_message
 
-    def plan_path(self, msg):
+    def get_path_to_point(self, msg):
         """
         Plans a path between the start and goal locations in the requested.
         Internally uses A* to plan the optimal path.
@@ -316,25 +254,24 @@ class PathPlanner:
         """
         ## Request the map
         ## In case of error, return an empty path
-        mapdata = PathPlanner.request_map()
-        if mapdata is None:
+        if self.map.data is None:
+            rospy.logerr("Path Path called but map data was of type 'None'")
             return Path()
 
-        # ## Calculate the C-space and publish it
-        rospy.wait_for_service('static_map', timeout=None)
-        cspacedata = self.calc_cspace(mapdata, 1)
+        # This pulls the newest map and solves C space
+        self.map.refresh_map()
         # ## Execute A*
-        start = PathPlanner.world_to_grid(mapdata, msg.start.pose.position)
-        goal  = PathPlanner.world_to_grid(mapdata, msg.goal.pose.position)
-        path  = self.a_star(cspacedata, start, goal)
-        #rospy.loginfo("a_star output: " + str(path))
+        start = self.world_to_grid(msg.start.pose.position)
+        goal = self.world_to_grid(msg.goal.pose.position)
+        path = self.a_star(start, goal)
+        # rospy.loginfo("a_star output: " + str(path))
 
         # ## Optimize waypoints
         waypoints = PathPlanner.optimize_path(path)
-        #rospy.loginfo("Optimized Waypoints: " + str(waypoints))
+        # rospy.loginfo("Optimized Waypoints: " + str(waypoints))
         # ## Return a Path message, this line can be erased and returned directly after debug
-        return_obj = PathPlanner.path_to_message(mapdata, waypoints)
-        #rospy.loginfo("path_to_message output: " + str(return_obj))
+        return_obj = PathPlanner.path_to_message(self, waypoints)
+        # rospy.loginfo("path_to_message output: " + str(return_obj))
         return return_obj
 
     def run(self):
@@ -344,7 +281,6 @@ class PathPlanner:
         # mapdata = PathPlanner.request_map()
         # self.calc_cspace(mapdata,1)
         rospy.spin()
-
 
 
 if __name__ == '__main__':

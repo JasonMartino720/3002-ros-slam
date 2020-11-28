@@ -20,4 +20,7 @@
     <arg name="z_pos" default="$(arg z_pos)"/>
   </include>
 
+  <node pkg="rbe3002_lab4" type="path_planner.py" name="path_planner" />
+  <node pkg="rbe3002_lab4" type="lab4.py" name="lab4" />
+
 </launch>

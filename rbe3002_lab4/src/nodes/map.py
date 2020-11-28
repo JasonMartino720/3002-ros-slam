@@ -1,8 +1,36 @@
+import rospy
+from nav_msgs.msg import GridCells
+from nav_msgs.srv import GetMap
+
+
 class Map:
-    def __init__(self, occupancy_grid):
+    def __init__(self):
+        self.refresh_map()
+
+
+    def refresh_map(self):
+        occupancy_grid = self.request_map()
+        if occupancy_grid is None:
+            raise TypeError("Tried to create Map object but got None for occupancy_grid")
         self.header = occupancy_grid.header
         self.info = occupancy_grid.info
         self.data = occupancy_grid.data
+        self.calc_cspace()
+
+    def request_map(self):
+        """
+        Requests the map from the map server.
+        :return [OccupancyGrid] The grid if the service call was successful,
+                                None in case of error.
+        """
+        ### REQUIRED CREDIT
+        rospy.loginfo("Requesting the map")
+        rospy.wait_for_service('static_map', timeout=None)
+        try:
+            map_server = rospy.ServiceProxy('static_map', GetMap)
+            return map_server().map
+        except rospy.ServiceException, e:
+            return None
 
     def force_inbound(self, curr_x, curr_y):
         new_x = max(0, min(curr_x, self.info.width - 1))
@@ -91,3 +119,45 @@ class Map:
 
     def is_cell_unknown(self, x, y):
         return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) == 0.5
+
+    def calc_cspace(self):
+        """
+        Calculates the C-Space, i.e., makes the obstacles in the map thicker.
+        Publishes the list of cells that were added to the original map.
+        :param mapdata [OccupancyGrid] The map data.
+        :param padding [int]           The number of cells around the obstacles.
+        :return        [OccupancyGrid] The C-Space.self.pubCspace.publish(msg)
+        """
+        OBSTACLE_THRESH = 90
+        rospy.loginfo("Calculating C-Space")
+
+        paddedArray = list(self.data)
+
+        ## Go through each cell in the occupancy grid
+        for x in range(self.info.height):
+            for y in range(self.info.width):
+                ## Inflate the obstacles where necessary
+                if self.data[self.grid_to_index(x, y)] > OBSTACLE_THRESH:
+                    paddedArray[self.grid_to_index(x, y)] = 100
+                    for neighbor in self.neighbors_of_8(x, y):
+                        x3, y3 = self.force_inbound(neighbor[0], neighbor[1])
+                        paddedArray[self.grid_to_index(x3, y3)] = 100
+
+        paddedArray = tuple(paddedArray)
+        gridCellsList = []
+
+        for x in range(self.info.height):
+            for y in range(self.info.width):
+                ## Inflate the obstacles where necessary
+                if paddedArray[self.grid_to_index(x, y)] > OBSTACLE_THRESH:
+                    world_point = self.grid_to_world(x, y)
+                    gridCellsList.append(world_point)
+
+        ## Create a GridCells message and publish it
+        msg = GridCells()
+        msg.cell_width = self.info.resolution
+        msg.cell_height = self.info.resolution
+        msg.cells = gridCellsList
+        msg.header = self.header
+        self.pubCspace.publish(msg)
+        self.cspace_data = paddedArray
