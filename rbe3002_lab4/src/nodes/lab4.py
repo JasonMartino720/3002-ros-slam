@@ -2,14 +2,13 @@
 
 import math
 import rospy
-import sys
 from nav_msgs.msg import Odometry, Path
-from nav_msgs.srv import GetMap, GetPlan
+from nav_msgs.srv import GetPlan
 from geometry_msgs.msg import PoseStamped, Twist, Vector3, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 
-class Lab3:
+class Lab4:
 
     def __init__(self):
         """
@@ -21,7 +20,7 @@ class Lab3:
 
         ### REQUIRED CREDIT
         ### Initialize node, name it 'lab3'
-        rospy.init_node('lab3', anonymous=True)
+        rospy.init_node('lab4', anonymous=True)
         ### Tell ROS that this node publishes Twist messages on the '/cmd_vel' topic
         self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 
@@ -88,46 +87,6 @@ class Lab3:
         ### Publish the message
         self.pub.publish(msg_cmd_vel)
 
-    def drive(self, distance, linear_speed):
-        """
-        Drives the robot in a straight line.
-        :param distance     [float] [m]   The distance to cover.
-        :param linear_speed [float] [m/s] The forward linear speed.
-        """
-        TOLERANCE = 0.0005  # meters
-        Kp = 2.140
-        Ki = 0.05
-        Kd = 4
-
-        self.ix = self.px
-        self.iy = self.py
-
-        error = dist_between(self.goal.x,self.goal.y,self.ix,self.iy) - dist_between(self.ix, self.iy, self.px, self.py)
-        lastError = 0
-        intergral = 0
-        # while True:
-        while (abs(error) > TOLERANCE):
-            if (self.newOdomReady2):
-                self.newOdomReady2 = False
-                error = dist_between(self.goal.x, self.goal.y, self.ix, self.iy) - dist_between(self.ix, self.iy,
-                                                                                                self.px, self.py)
-
-                intergral += error
-                intergral = max(-1, min(intergral, 1))
-                derivative = error - lastError
-                lastError = error
-
-                pidOutput = (Kp * error) + (Ki * intergral) + (Kd * derivative)
-
-                clamped = max(-linear_speed, min(pidOutput, linear_speed))
-                self.send_speed(clamped, -self.angular_z)
-                rospy.loginfo(
-                    'The target pos is %f, %f we are currently at %f, %f error %f int %f derivative %f clamped is %f' % (
-                        self.goal.x, self.goal.y, self.px, self.py, error, intergral, derivative, clamped))
-
-        self.send_speed(0,0)
-
-        rospy.loginfo("Move Done!")
 
     def rotate(self, angle, aspeed):
         """
@@ -264,14 +223,6 @@ class Lab3:
         self.drive_and_turn(MAX_ROTATION_SPEED, MAX_DRIVE_SPEED, msg.pose.position)
         rospy.sleep(0.5)
 
-        # rospy.loginfo("Going to intital angle: " + str(angle_to_goal(self.px, self.py, self.goal.x, self.goal.y)))
-        # self.rotate(angle_to_goal(self.px, self.py, self.goal.x, self.goal.y), ROTATION_SPEED)
-        # rospy.loginfo("initial ended at this angle: " + str(self.pth))
-        # rospy.sleep(0.5)
-        # rospy.loginfo("Going distance of: " + str(dist_between(self.px, self.py, self.goal.x, self.goal.y)))
-        # self.drive(dist_between(self.px, self.py, self.goal.x, self.goal.y), DRIVE_SPEED)
-        rospy.sleep(0.5)
-
     def update_odometry(self, msg):
         """
         Updates the current pose of the robot.
@@ -284,47 +235,6 @@ class Lab3:
         self.pth = orientation_to_yaw(msg.pose.pose.orientation)
         self.newOdomReady = True
         self.newOdomReady2 = True
-
-    def arc_to(self, msg):
-        """
-        Drives to a given position in an arc.
-        :param msg [PoseStamped] The target pose.
-        """
-
-        TOLERANCE = 0.1  # meters
-
-        goal = msg.pose.position
-
-        self.send_speed(0.22, solve_arc_omega(self.px, self.py, self.pth, goal.x, goal.y))
-        while (dist_between(self.px, self.py, goal.x, goal.y) > TOLERANCE):
-            rospy.sleep(0.005)
-        print("Arc Done!")
-
-    def smooth_drive(self, distance, linear_speed):
-        """
-        Drives the robot in a straight line by changing the actual speed smoothly.
-        :param distance     [float] [m]   The distance to cover.
-        :param linear_speed [float] [m/s] The maximum forward linear speed.
-        """
-
-        RAMP_DOWN = 0.5  # meters
-
-        self.ix = self.px
-        self.iy = self.py
-
-        for x in range(1000):
-            rospy.sleep(0.005)
-            self.send_speed(linear_speed * (x / 1000.0), 0)
-        self.send_speed(linear_speed, 0)
-
-        while (dist_between(self.ix, self.iy, self.px, self.py) < distance - RAMP_DOWN):
-            rospy.sleep(0.005)
-
-        for x in range(1000):
-            rospy.sleep(0.005)
-            self.send_speed(linear_speed * ((1000 - x) / 1000.0), 0)
-
-        self.send_speed(0, 0)
 
     def run(self):
         rospy.spin()
@@ -361,42 +271,11 @@ def orientation_to_yaw(orientation):
     (roll, pitch, yaw) = euler_from_quaternion(quat_list)
     return yaw
 
-
-def solve_turn_dir(current_angle, goal_angle):
-    """
-    Takes angles between -pi -> pi and tells you which way to turn
-    -1 means CCW and 1 mean CW
-    """
-    diff = goal_angle - current_angle
-    if (diff < 0):
-        diff += math.pi
-    if (diff > math.pi / 2):
-        return 1  # left turn
-    else:
-        return -1  # right turn
-
-
 def angle_to_goal(curr_x, curr_y, goal_x, goal_y):
     """
     Find the angle of the goal w.r.t to current position
     """
     return normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x)))
 
-
-def solve_arc_omega(curr_x, curr_y, curr_theta, goal_x, goal_y):
-    """
-    Solve for the omega required for the arc
-    """
-    arc_triangle_theta = (math.pi / 2) - (angle_to_goal(curr_x, curr_y, goal_x, goal_y) - curr_theta)
-    # Solve for the angle of the right trangle between arc and normal or robot
-    a = dist_between(curr_x, curr_y, goal_x, goal_y) / 2
-    h = a / math.cos(arc_triangle_theta)
-    # use trig to solve for hypotenous which is radius of the arc
-    r = h
-    v = 0.22  # m/sec
-    omega = v / r
-    return omega
-
-
 if __name__ == '__main__':
-    Lab3().run()
+    Lab4().run()
