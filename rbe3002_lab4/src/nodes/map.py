@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import rospy
 from nav_msgs.msg import GridCells
 from nav_msgs.srv import GetMap
