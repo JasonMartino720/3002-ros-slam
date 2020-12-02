@@ -65,9 +65,12 @@ class Frontier:
         # Size => (size),(size)...
         centeroid_list = kmeans.cluster_centers_
 
+        size_list = None
         #size_list = count of number of cells in each cluster
         # you should end up with [Number of cells in cluster1, #of cells in cluster2, #of cells in 3]
         #if you have 3 cells
+
+        return centeroid_list, size_list
 
 
     def get_frontier_cells(self):

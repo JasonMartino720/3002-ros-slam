@@ -46,7 +46,7 @@ class Lab4:
             #Detect frontier cells with edge dectection
             #Cluster frontier cells
             frontier_service = rospy.ServiceProxy('frontier_service_name', CustomMessageType)
-            centroid_list,size_list = frontier_service()
+            centroid_list, size_list = frontier_service()
                 #Expectting two lists
                 #(x,y),(x,y)...
                 #(size),(size)...
