@@ -1,6 +1,10 @@
+#!/usr/bin/env python2
+
 import rospy
 from nav_msgs.msg import GridCells
 from nav_msgs.srv import GetMap
+from sklearn import metrics
+from sklearn.cluster import KMeans
 
 
 class Frontier:
@@ -30,29 +34,43 @@ class Frontier:
         return(distance_between(tup1[0],tup1[1],tup2[0],tup2[1]))
 
     def return_frontier(self, msg):
-        #I have a feeling this is gonna get super complex, we might need to use somethink like
-        #K-means clusting instead, please google clustering algrotyhms so we have a good starting point
+
         edge_cells = self.get_frontier_cells()
+        #Assume inpuit is a list of tuples [(X,Y),(X,Y)]
+        #Where each cell is a edge between walkable and unknown
 
-        NEIGHBOR_DISTANCE = 2 #How far aparat can cells in one cluster be?
+        #I'm not sure but you might need to convert this to np array of pandas DF
+        # edge_cells = convert_to_np(edge_cells)
 
-        cell_iterator = iter(edge_cells) #Loop through all the cells but you can also get the next one with next()
-        clustered_cells = list() #Should end up with N list insdie this where each list is it's own cluster
-        current_cluster_index = 0 #For keeping track of which index we are adding to
-        current_cluster_builder = list() #Builids up the current cluster before submitting it to the main list
-        current_cluster_builder.append(next(cell_iterator)) #add the first cell to the first cluster
-        for cells_that_need_assignment in cell_iterator:
-            for new_cell in edge_cells:
-                for currentCell in current_cluster_builder:
-                    if(self.tuple_distance_between(currentCell, new_cell) < NEIGHBOR_DISTANCE):
-                        current_cluster_builder.append(new_cell) #This cell was assigned to this cluster since it was close enough
-                        pass #Move on to next cell
-                #After checking every cell in the current cluster, if no cell is close enough to the new cell
-                current_cluster_index += 1
-                clustered_cells.append(current_cluster_builder)
-                #Make a new cluster with this cell as a the start
-                current_cluster_builder = list()
-                current_cluster_builder.append(new_cell)
+        #Try changing this
+        NUMBER_OF_PREDICTED_CLUSTERS = 3
+
+        kmeans = KMeans(n_clusters=NUMBER_OF_PREDICTED_CLUSTERS, n_init=10)
+        kmeans.fit(edge_cells)
+
+        #expect a int list with the value that reprenets the cluster number
+        sorted_index = kmeans.labels_
+
+        #This is what you get (from the docs)
+            # >> > X = np.array([[1, 2], [1, 4], [1, 0],
+            #                    ...[10, 2], [10, 4], [10, 0]])
+            # >> > kmeans = KMeans(n_clusters=2, random_state=0).fit(X)
+            # >> > kmeans.labels_
+            # array([1, 1, 1, 0, 0, 0], dtype=int32)
+
+        # Return two lists, a centeroids list and size (number of cells) list
+
+        # Expectting two lists
+        # Centeroid => (x,y),(x,y)...
+        # Size => (size),(size)...
+        centeroid_list = kmeans.cluster_centers_
+
+        size_list = None
+        #size_list = count of number of cells in each cluster
+        # you should end up with [Number of cells in cluster1, #of cells in cluster2, #of cells in 3]
+        #if you have 3 cells
+
+        return centeroid_list, size_list
 
 
     def get_frontier_cells(self):

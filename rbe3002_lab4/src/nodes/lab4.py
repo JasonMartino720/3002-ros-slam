@@ -8,6 +8,12 @@ from geometry_msgs.msg import PoseStamped, Twist, Vector3, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 
+def is_within_threshold(pos1, pos2):
+    #Are the two thresholds close enough to be considered the same centeroids?
+    #return boolean
+    pass
+
+
 class Lab4:
 
     def __init__(self):
@@ -33,6 +39,72 @@ class Lab4:
         ### Tell ROS that this node subscribes to PoseStamped messages on the '/move_base_simple/goal' topic
         ### When a message is received, call self.go_to
         rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.execute_path)
+
+    def phase_one_loop(self):
+        while True:
+            #Update C-space
+            #Detect frontier cells with edge dectection
+            #Cluster frontier cells
+            frontier_service = rospy.ServiceProxy('frontier_service_name', CustomMessageType)
+            centroid_list, size_list = frontier_service()
+                #Expectting two lists
+                #(x,y),(x,y)...
+                #(size),(size)...
+            #Path Plan to each frontier
+                #Using the conversion layer, we will convert curr pos to grid cells
+            world_to_grid = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
+            grid_point = world_to_grid((self.px, self.py))
+
+            distance_list = list()
+            for centroid in centroid_list:
+
+                path_planner = rospy.ServiceProxy('request_distance', "tuple,tuple->Int")
+                distance_to_frontier = path_planner(grid_point, centroid)
+                distance_list.append(distance_to_frontier)
+
+            #Return sorted list with gird plan length and size of frontier
+            metric_list = list()
+            for size, distance in zip(size_list, distance_list):
+                metric = float(size) / float(distance)
+                metric_list.append(metric)
+
+            combined = sorted(zip(metric_list, centroid_list, size_list, distance_list))
+            sorted_centeroids = [x for _, x, _, _ in combined]
+
+            #Has goal changed?
+            curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
+            curr_goal = curr_nav_goal()
+            new_goal = sorted_centeroids[0]
+            if not is_within_threshold(curr_goal, new_goal):
+            # <If yes> convert grid plan to world plan ()
+
+
+                # Creating A PoseStamped msg of the current robot position for GetPlan.start
+                curr_pos = PoseStamped()
+                curr_pos.pose.position = Point(self.px, self.py, 0)
+                quat = quaternion_from_euler(0, 0, self.pth)
+                curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+
+                # Convert grid plan to world plan
+                grid_to_world = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
+                world_point = grid_to_world(new_goal)
+
+                goal_pos = PoseStamped()
+                goal_pos.pose.position = Point(world_point[0], world_point[1], 0)
+                quat = quaternion_from_euler(0, 0, 0)
+                goal_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+
+                # Request Plan
+                path_planner = rospy.ServiceProxy('plan_path', GetPlan)
+                get_plan_obj = path_planner(curr_pos, goal_pos, TOLERANCE=0.1)
+
+                set_nav_path = rospy.ServiceProxy('reset_nav_goal_and_set_new_path', "Path->void")
+                set_nav_path(get_plan_obj)
+
+
+            #Then send this position to the new navigation node
+
+            # <If no> Restart this loop
 
     def execute_path(self, msg):
         TOLERANCE = 0.1
