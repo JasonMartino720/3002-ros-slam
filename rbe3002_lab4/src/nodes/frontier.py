@@ -3,8 +3,6 @@
 import rospy
 from nav_msgs.msg import GridCells
 from nav_msgs.srv import GetMap
-from sklearn import metrics
-from sklearn.cluster import KMeans
 
 
 class Frontier:
@@ -16,11 +14,16 @@ class Frontier:
         #Do we have to make a custom message or can we use a premade one?
         self.frontierService = rospy.Service('frontier_list', list, self.return_frontier)
 
+        # Create a publisher for the C-space (the enlarged occupancy grid)
+        # The topic is "/path_planner/cspace", the message type is GridCells
+        self.pubCspace = rospy.Publisher("/path_planner/cspace", GridCells, queue_size=10)
+
         rospy.sleep(1.0)
         rospy.loginfo("Frontier node ready")
 
         self.refresh_map()
         self.map = None
+
 
 
     def return_frontier(self, msg):
@@ -87,22 +90,23 @@ class Frontier:
 
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating edge")
-
+        
+        self.refresh_map()
         frontier_map = self.map
 
         ## Go through each cell in the occupancy grid
         for x in range(self.map.info.height):
             for y in range(self.map.info.width):
                 #These helper functions have to be imported or the two classes "Frontier" and "map" have to be combined
-                if is_cell_unknown(x, y):
+                if self.is_cell_unknown(x, y):
                     #This function is written in map.py!!!!
                     # is_cell_unknown()
                     # is_cell_wall()
                     # is_cell_walkable()
                     #If any neighbor of a unknown cell is walkable, make the unknow a frontier
                     for neighbor in self.neighbors_of_4(x, y):
-                        if is_cell_walkable(neighbor[0],neighbor[1]):
-                            frontier_map.data[grid_to_index(x, y)] = 100
+                        if self.is_cell_walkable(neighbor[0],neighbor[1]):
+                            frontier_map.data[self.grid_to_index(x, y)] = 100
 
         #This returns a occupancy grid with the edge cells only
         return frontier_map
@@ -111,9 +115,7 @@ class Frontier:
         occupancy_grid = self.request_GMap() #Changed the call here, all good?
         if occupancy_grid is None:
             raise TypeError("Tried to create Map object but got None for occupancy_grid")
-        self.header = occupancy_grid.header
-        self.info = occupancy_grid.info
-        self.data = occupancy_grid.data
+        self.map = occupancy_grid
         self.calc_cspace()
 
     def request_map(self):
@@ -147,8 +149,8 @@ class Frontier:
             return None
 
     def force_inbound(self, curr_x, curr_y):
-        new_x = max(0, min(curr_x, self.info.width - 1))
-        new_y = max(0, min(curr_y, self.info.height - 1))
+        new_x = max(0, min(curr_x, self.map.info.width - 1))
+        new_y = max(0, min(curr_y, self.map.info.height - 1))
 
         return new_x, new_y
 
@@ -164,11 +166,11 @@ class Frontier:
 
         if x != 0 and self.is_cell_walkable(x - 1, y):
             return_list.append((x - 1, y))
-        if x != self.info.width - 1 and self.is_cell_walkable(x + 1, y):
+        if x != self.map.info.width - 1 and self.is_cell_walkable(x + 1, y):
             return_list.append((x + 1, y))
         if y != 0 and self.is_cell_walkable(x, y - 1):
             return_list.append((x, y - 1))
-        if y != self.info.height - 1 and self.is_cell_walkable(x, y + 1):
+        if y != self.map.info.height - 1 and self.is_cell_walkable(x, y + 1):
             return_list.append((x, y + 1))
 
         return return_list
@@ -186,17 +188,17 @@ class Frontier:
 
         if x != 0 and y != 0 and self.is_cell_walkable(x - 1, y - 1):
             returnList.append((x - 1, y - 1))
-        if x != self.info.width - 1 and y != 0 and self.is_cell_walkable(x + 1, y - 1):
+        if x != self.map.info.width - 1 and y != 0 and self.is_cell_walkable(x + 1, y - 1):
             returnList.append((x + 1, y - 1))
-        if y != self.info.height - 1 and x != 0 and self.is_cell_walkable(x - 1, y + 1):
+        if y != self.map.info.height - 1 and x != 0 and self.is_cell_walkable(x - 1, y + 1):
             returnList.append((x - 1, y + 1))
-        if x != self.info.width - 1 and y != self.info.height - 1 and self.is_cell_walkable(x + 1, y + 1):
+        if x != self.map.info.width - 1 and y != self.map.info.height - 1 and self.is_cell_walkable(x + 1, y + 1):
             returnList.append((x + 1, y + 1))
 
         return returnList
 
     def is_cell_in_bounds(self, x, y):
-        return 0 <= x < self.info.width - 1 and self.info.height - 1 > y >= 0
+        return 0 <= x < self.map.info.width - 1 and self.map.info.height - 1 > y >= 0
 
     def grid_to_index(self, x, y):
         """
@@ -205,13 +207,13 @@ class Frontier:
         :param y [int] The cell Y coordinate.
         :return  [int] The index.
         """
-        return y * self.info.width + x
+        return y * self.map.info.width + x
 
     def get_cell_value(self, x, y):
         if not self.is_cell_in_bounds(x, y):
             raise IndexError("The cell index (%d, %d) is outside of this map (size %dx%d)" % (
-                x, y, self.info.width, self.info.height))
-        return self.data[self.grid_to_index(x, y)]
+                x, y, self.map.info.width, self.map.info.height))
+        return self.map.data[self.grid_to_index(x, y)]
 
     def is_cell_walkable(self, x, y):
         """
@@ -245,13 +247,13 @@ class Frontier:
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
 
-        paddedArray = list(self.data)
+        paddedArray = list(self.map.data)
 
         ## Go through each cell in the occupancy grid
-        for x in range(self.info.height):
-            for y in range(self.info.width):
+        for x in range(self.map.info.height):
+            for y in range(self.map.info.width):
                 ## Inflate the obstacles where necessary
-                if self.data[self.grid_to_index(x, y)] > OBSTACLE_THRESH:
+                if self.map.data[self.grid_to_index(x, y)] > OBSTACLE_THRESH:
                     paddedArray[self.grid_to_index(x, y)] = 100
                     for neighbor in self.neighbors_of_8(x, y):
                         x3, y3 = self.force_inbound(neighbor[0], neighbor[1])
@@ -260,8 +262,8 @@ class Frontier:
         paddedArray = tuple(paddedArray)
         gridCellsList = []
 
-        for x in range(self.info.height):
-            for y in range(self.info.width):
+        for x in range(self.map.info.height):
+            for y in range(self.map.info.width):
                 ## Inflate the obstacles where necessary
                 if paddedArray[self.grid_to_index(x, y)] > OBSTACLE_THRESH:
                     world_point = self.grid_to_world(x, y)
@@ -269,10 +271,10 @@ class Frontier:
 
         ## Create a GridCells message and publish it
         msg = GridCells()
-        msg.cell_width = self.info.resolution
-        msg.cell_height = self.info.resolution
+        msg.cell_width = self.map.info.resolution
+        msg.cell_height = self.map.info.resolution
         msg.cells = gridCellsList
-        msg.header = self.header
+        msg.header = self.map.header
         self.pubCspace.publish(msg)
         self.cspace_data = paddedArray
 
@@ -281,6 +283,6 @@ class Frontier:
 
     def tuple_distance_between(self, tup1, tup2):
         #Wrapper for equalidant distance function that takes in tuples directly
-        return(distance_between(tup1[0],tup1[1],tup2[0],tup2[1]))
+        return(self.distance_between(tup1[0],tup1[1],tup2[0],tup2[1]))
 
 
