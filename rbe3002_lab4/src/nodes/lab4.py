@@ -45,11 +45,12 @@ class Lab4:
             #Update C-space
             #Detect frontier cells with edge dectection
             #Cluster frontier cells
-            frontier_service = rospy.ServiceProxy('frontier_service_name', CustomMessageType)
-            centroid_list, size_list = frontier_service()
-                #Expectting two lists
+            frontier_srv = rospy.ServiceProxy('frontier_service_name', list)
+            frontier_list = frontier_srv()
+                #Are we expecting a list of lists of tuples
                 #(x,y),(x,y)...
-                #(size),(size)...
+                # OR
+                #(x, y, size),(x, y, size)...
             #Path Plan to each frontier
                 #Using the conversion layer, we will convert curr pos to grid cells
             world_to_grid = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
@@ -348,6 +349,38 @@ def angle_to_goal(curr_x, curr_y, goal_x, goal_y):
     Find the angle of the goal w.r.t to current position
     """
     return normalize_angle(math.atan2((curr_y - goal_y), (curr_x - goal_x)))
+
+def grid_to_world(self, x, y):
+    """
+    Transforms a cell coordinate in the occupancy grid into a world coordinate.
+    :param mapdata [OccupancyGrid] The map information.
+    :param x       [int]           The cell X coordinate.
+    :param y       [int]           The cell Y coordinate.
+    :return        [Point]         The position in the world.
+    """
+    world_point = Point()
+
+    world_point.x = (x + 0.5) * self.map.info.resolution + self.map.info.origin.position.x
+    world_point.y = (y + 0.5) * self.map.info.resolution + self.map.info.origin.position.y
+    # rospy.loginfo("mapdata.info: " + str(mapdata.info))
+    # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
+    # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
+    return world_point
+
+def world_to_grid(self, wp):
+    """
+    Transforms a world coordinate into a cell coordinate in the occupancy grid.
+    :param mapdata [OccupancyGrid] The map information.
+    :param wp      [Point]         The world coordinate.
+    :return        [(int,int)]     The cell position as a tuple.
+    """
+
+    x = int((wp.x - self.map.info.origin.position.x) / self.map.info.resolution)
+    y = int((wp.y - self.map.info.origin.position.y) / self.map.info.resolution)
+
+    grid_coord = (x, y)
+
+    return grid_coord
 
 if __name__ == '__main__':
     Lab4().run()
