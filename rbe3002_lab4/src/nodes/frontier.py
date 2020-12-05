@@ -25,16 +25,57 @@ class Frontier:
 
     def return_frontier(self, msg):
 
-        edge_cells = self.get_frontier_cells()
-        #Assume inpuit is a list of tuples [(X,Y),(X,Y)]
-        #Where each cell is a edge between walkable and unknown
-
-        #I'm not sure but you might need to convert this to np array of pandas DF
-        # edge_cells = convert_to_np(edge_cells)
+        egde_occupancy_grid = self.get_frontier_cells()
+        #Josh - this is the occupancy grid with all the edge with the value of 100
 
         #Kohmei, I believe here is where the calls to josh's new clustering functions will be, I don't have them yet so
         # I'm not sure what comes next. I assume the clustering algorithm output will already be a list of frontiers, does it include sizes
         # or is more computation necessary here?
+
+        # #Jason, I think we discuessed that we are sending the raw cluster data in this format:
+        # List(
+        #     List(coordinate1,cord2,cord3 .... cordN) #Cluster 1
+        #     List(coordinate1,cord2,cord3 .... cordN) #Cluster 2
+        #     List(coordinate1,cord2,cord3 .... cordN) #Cluster 3
+        # ) #coordinate is a tuple (x, y)
+        # So we don't need any more processing, but idea is that the clustering function will be written here
+
+        #Josh, The rest is for you:
+        # Again, you are given a occupancy grid with cells that are either 0 or 100
+        # 0 means the cell is not a frontier (egde) cell, 100 means it is
+        #You want to output a list of lists or corrdinates (look above)
+        #Where each element in the outer list is one cluster
+
+        #Given the occupanyGrid with edges marked as 100, dilate and erode
+            # egde_occupancy_grid = dilate(egde_occupancy_grid)
+            # egde_occupancy_grid = erode(egde_occupancy_grid)
+        # (Very similar to C-space so please write these two functions)
+
+        #Start a loop here that runs until all cells have been assigned
+        # (hint: how do you know if all cells have been assinged? Count the number of cells you have to assign and
+        # keep track of how many you have assigned so far)
+        #Now pick a random point
+        #Find the height and widtht of the occupany grid
+            #height = self.map.info....
+            #width = ...
+
+        #use the max values for x and y to find a random value in grid space
+            #x_random_value = ...
+            #y_random_value = ... (hint: use randint(min,max))
+
+        #First check to make sure this is a edge cell
+        #Then Check if this random cell (x_random_value, y_random_value) is already assinged one cluster or not
+        #(hint: loop through the return list you have and see if any coordinates match your random value)
+
+        #Ok so now you have a random cell that has not been assigned yet.
+        #Use reccursion (or not) to go through each of the neighboors and see if they are a edge cell (with value 100)
+        #or not. If they are a edge, check the neighbors for this cell as well.
+
+        #Each time you see a a new neighbor that is a edge cell, add it to the cluster you are currently building
+        #Repeat the reccurtion until you have no more neighbors that are edges left.
+
+        #End of the loop that find a new random cell
+        #This should loop until you have catergorized every cell
 
         frontier_list = [()]
 
@@ -47,7 +88,7 @@ class Frontier:
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating edge")
 
-        frontier_cells = list()
+        frontier_map = self.map
 
         ## Go through each cell in the occupancy grid
         for x in range(self.map.info.height):
@@ -60,14 +101,11 @@ class Frontier:
                     # is_cell_walkable()
                     #If any neighbor of a unknown cell is walkable, make the unknow a frontier
                     for neighbor in self.neighbors_of_4(x, y):
-                        this_is_a_frontier = False
                         if is_cell_walkable(neighbor[0],neighbor[1]):
-                            #thee is probably a better way of doing this that is either 0 or 1, not 0 or 100
-                            this_is_a_frontier = True
-                        if(this_is_a_frontier):
-                            frontier_cells.append((x, y))
+                            frontier_map.data[grid_to_index(x, y)] = 100
 
-        return frontier_cells
+        #This returns a occupancy grid with the edge cells only
+        return frontier_map
 
     def refresh_map(self):
         occupancy_grid = self.request_GMap() #Changed the call here, all good?
