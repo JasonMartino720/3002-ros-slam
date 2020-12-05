@@ -291,6 +291,49 @@ class PathPlanner:
         rospy.loginfo("Path Planner is running")
         rospy.spin()
 
+    def neighbors_of_4(self, x, y):
+        """
+        Returns the walkable 4-neighbors cells of (x,y) in the occupancy grid.
+        :param self [OccupancyGrid] The map information.
+        :param x       [int]           The X coordinate in the grid.
+        :param y       [int]           The Y coordinate in the grid.
+        :return        [[(int,int)]]   A list of walkable 4-neighbors.
+        """
+        return_list = []
+
+        if x != 0 and self.is_cell_walkable(x - 1, y):
+            return_list.append((x - 1, y))
+        if x != self.info.width - 1 and self.is_cell_walkable(x + 1, y):
+            return_list.append((x + 1, y))
+        if y != 0 and self.is_cell_walkable(x, y - 1):
+            return_list.append((x, y - 1))
+        if y != self.info.height - 1 and self.is_cell_walkable(x, y + 1):
+            return_list.append((x, y + 1))
+
+        return return_list
+
+    def neighbors_of_8(self, x, y):
+        """
+        Returns the walkable 8-neighbors cells of (x,y) in the occupancy grid.
+        :param mapdata [OccupancyGrid] The map information.
+        :param x       [int]           The X coordinate in the grid.
+        :param y       [int]           The Y coordinate in the grid.
+        :return        [[(int,int)]]   A list of walkable 8-neighbors.
+        """
+        # This already checks for in-boundness
+        returnList = self.neighbors_of_4(x, y)
+
+        if x != 0 and y != 0 and self.is_cell_walkable(x - 1, y - 1):
+            returnList.append((x - 1, y - 1))
+        if x != self.info.width - 1 and y != 0 and self.is_cell_walkable(x + 1, y - 1):
+            returnList.append((x + 1, y - 1))
+        if y != self.info.height - 1 and x != 0 and self.is_cell_walkable(x - 1, y + 1):
+            returnList.append((x - 1, y + 1))
+        if x != self.info.width - 1 and y != self.info.height - 1 and self.is_cell_walkable(x + 1, y + 1):
+            returnList.append((x + 1, y + 1))
+
+        return returnList
+
 
 if __name__ == '__main__':
     PathPlanner().run()
