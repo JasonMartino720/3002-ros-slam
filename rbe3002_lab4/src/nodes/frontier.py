@@ -2,7 +2,7 @@
 
 import rospy
 import random
-from nav_msgs.msg import GridCells
+from nav_msgs.msg import GridCells, OccupancyGrid
 from nav_msgs.srv import GetMap
 
 
@@ -13,19 +13,19 @@ class Frontier:
         rospy.init_node("frontier")
 
         #Do we have to make a custom message or can we use a premade one?
-        self.frontierService = rospy.Service('frontier_list', list, self.return_frontier)
+        self.frontierService = rospy.Service('frontiers', list, self.return_frontier)
 
         # Create a publisher for the C-space (the enlarged occupancy grid)
         # The topic is "/path_planner/cspace", the message type is GridCells
-        self.pubCspace = rospy.Publisher("/path_planner/cspace", GridCells, queue_size=10)
+        self.pubCspace = rospy.Service("cspace", OccupancyGrid, self.calc_cspace)
+
+        rospy.Subscriber("/map", OccupancyGrid, self.update_map)
 
         rospy.sleep(1.0)
         rospy.loginfo("Frontier node ready")
 
-        self.refresh_map()
-        self.map = None
-
-
+    def update_map(self, occupancyGrid):
+        self.map = occupancyGrid
 
     def return_frontier(self, msg):
 
@@ -134,7 +134,7 @@ class Frontier:
             # I ended here:
             # I ended here:
             # I ended here:
-        
+
 
         #Each time you see a a new neighbor that is a edge cell, add it to the cluster you are currently building
         #Repeat the reccurtion until you have no more neighbors that are edges left.
@@ -152,7 +152,7 @@ class Frontier:
 
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating edge")
-        
+
         self.refresh_map()
         frontier_map = self.map
 
@@ -172,43 +172,6 @@ class Frontier:
 
         #This returns a occupancy grid with the edge cells only
         return frontier_map
-
-    def refresh_map(self):
-        occupancy_grid = self.request_GMap() #Changed the call here, all good?
-        if occupancy_grid is None:
-            raise TypeError("Tried to create Map object but got None for occupancy_grid")
-        self.map = occupancy_grid
-        self.calc_cspace()
-
-    def request_map(self):
-        """
-        Requests the map from the map server.
-        :return [OccupancyGrid] The grid if the service call was successful,
-                                None in case of error.
-        """
-        ### REQUIRED CREDIT
-        rospy.loginfo("Requesting the map")
-        rospy.wait_for_service('static_map', timeout=None)
-        try:
-            map_server = rospy.ServiceProxy('static_map', GetMap)
-            return map_server().map
-        except rospy.ServiceException, e:
-            return None
-
-    def request_GMap(self):
-        """
-        Requests the map from the map server.
-        :return [OccupancyGrid] The grid if the service call was successful,
-                                None in case of error.
-        """
-        ### REQUIRED CREDIT
-        rospy.loginfo("Requesting the map")
-        rospy.wait_for_service('dynamic_map', timeout=None)
-        try:
-            map_server = rospy.ServiceProxy('dynamic_map', GetMap)
-            return map_server().map
-        except rospy.ServiceException, e:
-            return None
 
     def force_inbound(self, curr_x, curr_y):
         new_x = max(0, min(curr_x, self.map.info.width - 1))
@@ -300,11 +263,7 @@ class Frontier:
 
     def calc_cspace(self):
         """
-        Calculates the C-Space, i.e., makes the obstacles in the map thicker.
-        Publishes the list of cells that were added to the original map.
-        :param mapdata [OccupancyGrid] The map data.
-        :param padding [int]           The number of cells around the obstacles.
-        :return        [OccupancyGrid] The C-Space.self.pubCspace.publish(msg)
+        Published GridCells and returns (to the service) a OccupancyGrid
         """
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
@@ -338,13 +297,5 @@ class Frontier:
         msg.cells = gridCellsList
         msg.header = self.map.header
         self.pubCspace.publish(msg)
-        self.cspace_data = paddedArray
 
-    def update_map(self, occupancyGrid):
-        self.map = occupancyGrid
-
-    def tuple_distance_between(self, tup1, tup2):
-        #Wrapper for equalidant distance function that takes in tuples directly
-        return(self.distance_between(tup1[0],tup1[1],tup2[0],tup2[1]))
-
-
+        return paddedArray
