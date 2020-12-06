@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 import rospy
+import random
 from nav_msgs.msg import GridCells
 from nav_msgs.srv import GetMap
 from sklearn import metrics
@@ -37,13 +38,13 @@ class Frontier:
         #     List(coordinate1,cord2,cord3 .... cordN) #Cluster 1
         #     List(coordinate1,cord2,cord3 .... cordN) #Cluster 2
         #     List(coordinate1,cord2,cord3 .... cordN) #Cluster 3
-        # ) #coordinate is a tuple (x, y)
+        # ) #coordinate is a tuple (x, y)the cell is not assigned
         # So we don't need any more processing, but idea is that the clustering function will be written here
 
         #Josh, The rest is for you:
         # Again, you are given a occupancy grid with cells that are either 0 or 100
         # 0 means the cell is not a frontier (egde) cell, 100 means it is
-        #You want to output a list of lists or corrdinates (look above)
+        #You want to output a list of lists of corrdinates (look above)
         #Where each element in the outer list is one cluster
 
         #Given the occupanyGrid with edges marked as 100, dilate and erode
@@ -51,25 +52,86 @@ class Frontier:
             # egde_occupancy_grid = erode(egde_occupancy_grid)
         # (Very similar to C-space so please write these two functions)
 
+        set_num = 3
+        Obstacle_thresh = 90
+
+        #original array
+        gridArray = self.data
+        coppyArray = gridArray
+        #Dilationthe cell is not assigned
+        for count in range(set_num):
+            for x in range(self.map.info.height):
+                for y in range(self.map.info.width):
+                    ## Inflate the obstacles where necessary
+                    if self.data[self.grid_to_index(x, y)] >= Obstacle_thresh:
+                        coppyArray[self.grid_to_index(x, y)] = 100
+                        for neighbor in self.neighbors_of_8(x, y):
+                            newX, newY = self.force_inbound(neighbor[0], neighbor[1])
+                            coppyArray[self.grid_to_index(newX, newY)] = 100
+            gridArray = coppyArray
+
+        #Erosion
+        for count in range(set_num):
+            for x in range(self.map.info.height):
+                for y in range(self.map.info.width):
+                    ## Inflate the obstacles where necessary
+                    if self.data[self.grid_to_index(x, y)] >= Obstacle_thresh:
+                        coppyArray[self.grid_to_index(x, y)] = 100
+                        for neighbor in self.neighbors_of_8(x, y):
+                            newX, newY = self.force_inbound(neighbor[0], neighbor[1])
+                            coppyArray[self.grid_to_index(newX, newY)] = 0
+            gridArray = coppyArray
+
+
         #Start a loop here that runs until all cells have been assigned
         # (hint: how do you know if all cells have been assinged? Count the number of cells you have to assign and
         # keep track of how many you have assigned so far)
+
+        assigned_so_far = 0
+        need_assignment = 0
+
+        #counting cells that need to be assigned
+        for cells in gridArray:
+            if gridArray[cells] == 100:
+                need_assignment += 1
+
+
         #Now pick a random point
-        #Find the height and widtht of the occupany grid
+        #Find the height and widtht of the occupancy grid
             #height = self.map.info....
             #width = ...
+        occ_height = self.map.info.height
+        occ_width = self.map.info.width
 
         #use the max values for x and y to find a random value in grid space
-            #x_random_value = ...
-            #y_random_value = ... (hint: use randint(min,max))
+
+        x_random_value = random.randint(0, occ_width)
+        y_random_value = random.randint(0, occ_height)
+
 
         #First check to make sure this is a edge cell
         #Then Check if this random cell (x_random_value, y_random_value) is already assinged one cluster or not
         #(hint: loop through the return list you have and see if any coordinates match your random value)
+        random_point = ()
+
+        #Kohmei, question for you, which type of occupancy grid do we use here?
+        for cells in gridArray:
+            if gridArray[cells] == 100:
+                if gridArray[cells(0)] == x_random_value and gridArray[cells(1)] == y_random_value:
+                    random_point = gridArray[cells]
+
 
         #Ok so now you have a random cell that has not been assigned yet.
         #Use reccursion (or not) to go through each of the neighboors and see if they are a edge cell (with value 100)
         #or not. If they are a edge, check the neighbors for this cell as well.
+        for cells in self.neighbors_of_8(random_point[0], random_point[1]):
+            #I ended here:
+            # I ended here:
+            # I ended here:
+            # I ended here:
+            # I ended here:
+            # I ended here:
+        
 
         #Each time you see a a new neighbor that is a edge cell, add it to the cluster you are currently building
         #Repeat the reccurtion until you have no more neighbors that are edges left.
