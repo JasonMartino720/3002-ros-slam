@@ -4,12 +4,11 @@ import math
 
 import rospy
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
-from nav_msgs.msg import GridCells, Path
+from nav_msgs.msg import GridCells, Path, OccupancyGrid
 from nav_msgs.srv import GetPlan
 from tf_conversions.posemath import transformations
 
 from priority_queue import PriorityQueue
-from map import Map
 
 
 class PathPlanner:
@@ -24,9 +23,7 @@ class PathPlanner:
         # type GetPlan and calls self.plan_path() when a message is received
         self.pathService = rospy.Service('plan_path', GetPlan, self.get_path_to_point)
 
-        # Create a publisher for the C-space (the enlarged occupancy grid)
-        # The topic is "/path_planner/cspace", the message type is GridCells
-        self.pubCspace = rospy.Publisher("/path_planner/cspace", GridCells, queue_size=10)
+
         ## Create publishers for A* (expanded cells, frontier, ...)
         self.pubVisited = rospy.Publisher("/path_planner/visited", GridCells, queue_size=10)
         ## Choose a the topic names, the message type is GridCells
@@ -34,11 +31,17 @@ class PathPlanner:
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
+        self.cspace = None
+        rospy.Subscriber("/frontier/cspace", OccupancyGrid, self.update_cspace)
+
         # create a Map object
         rospy.loginfo("Calling map obj")
         self.map = Map()
         rospy.loginfo("map obj done")
         rospy.loginfo(self.map)
+
+    def update_cspace(self, msg):
+        self.cspace = msg
 
     @staticmethod
     def euclidean_distance(x1, y1, x2, y2):
@@ -268,10 +271,11 @@ class PathPlanner:
 
         # This pulls the newest map and solves C space
         self.map.refresh_map()
+        mapdata = calc_cpsace()
         # ## Execute A*
         start = self.world_to_grid(msg.start.pose.position)
         goal = self.world_to_grid(msg.goal.pose.position)
-        path = self.a_star(start, goal)
+        path = self.a_star(mapdata, start, goal)
         # rospy.loginfo("a_star output: " + str(path))
 
         # ## Optimize waypoints
