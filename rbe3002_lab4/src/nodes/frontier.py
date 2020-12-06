@@ -153,7 +153,6 @@ class Frontier:
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating edge")
 
-        self.refresh_map()
         frontier_map = self.map
 
         ## Go through each cell in the occupancy grid

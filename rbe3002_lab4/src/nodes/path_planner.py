@@ -35,67 +35,78 @@ class PathPlanner:
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
-def phase_one_loop(self):
-    while True:
-        #Update C-space
-        #Detect frontier cells with edge dectection
-        #Cluster frontier cells
-        frontier_srv = rospy.ServiceProxy('frontier_service_name', list)
-        frontier_list = frontier_srv()
-            #Are we expecting a list of lists of tuples
-            #(x,y),(x,y)...
-            # OR
-            #(x, y, size),(x, y, size)...
-        #Path Plan to each frontier
-            #Using the conversion layer, we will convert curr pos to grid cells
-        world_to_grid = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
-        grid_point = world_to_grid((self.px, self.py))
+        def update_odometry(self, msg):
+            """
+            Updates the current pose of the robot.
+            This method is a callback bound to a Subscriber.
+            :param msg [Odometry] The current odometry information.
+            """
+            self.angular_z = msg.twist.twist.angular.z
+            self.px = msg.pose.pose.position.x
+            self.py = msg.pose.pose.position.y
+            self.pth = orientation_to_yaw(msg.pose.pose.orientation)
+            self.newOdomReady = True
+            self.newOdomReady2 = True
 
-        distance_list = list()
-        for centroid in centroid_list:
+    def phase_one_loop(self):
+        while True:
+            #Update C-space
+            #Detect frontier cells with edge dectection
+            #Cluster frontier cells
+            frontier_srv = rospy.ServiceProxy('frontier_service_name', list)
+            frontier_list = frontier_srv()
+                #Are we expecting a list of lists of tuples
+                #(x,y),(x,y)...
+                # OR
+                #(x, y, size),(x, y, size)...
+            #Path Plan to each frontier
+                #Using the conversion layer, we will convert curr pos to grid cells
 
-            path_planner = rospy.ServiceProxy('request_distance', "tuple,tuple->Int")
-            distance_to_frontier = path_planner(grid_point, centroid)
-            distance_list.append(distance_to_frontier)
+            distance_list = list()
+            for centroid in centroid_list:
 
-        #Return sorted list with gird plan length and size of frontier
-        metric_list = list()
-        for size, distance in zip(size_list, distance_list):
-            metric = float(size) / float(distance)
-            metric_list.append(metric)
+                path_planner = rospy.ServiceProxy('request_distance', "tuple,tuple->Int")
+                distance_to_frontier = path_planner(grid_point, centroid)
+                distance_list.append(distance_to_frontier)
 
-        combined = sorted(zip(metric_list, centroid_list, size_list, distance_list))
-        sorted_centeroids = [x for _, x, _, _ in combined]
+            #Return sorted list with gird plan length and size of frontier
+            metric_list = list()
+            for size, distance in zip(size_list, distance_list):
+                metric = float(size) / float(distance)
+                metric_list.append(metric)
 
-        #Has goal changed?
-        curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
-        curr_goal = curr_nav_goal()
-        new_goal = sorted_centeroids[0]
-        if not is_within_threshold(curr_goal, new_goal):
-        # <If yes> convert grid plan to world plan ()
+            combined = sorted(zip(metric_list, centroid_list, size_list, distance_list))
+            sorted_centeroids = [x for _, x, _, _ in combined]
+
+            #Has goal changed?
+            curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
+            curr_goal = curr_nav_goal()
+            new_goal = sorted_centeroids[0]
+            if not is_within_threshold(curr_goal, new_goal):
+            # <If yes> convert grid plan to world plan ()
 
 
-            # Creating A PoseStamped msg of the current robot position for GetPlan.start
-            curr_pos = PoseStamped()
-            curr_pos.pose.position = Point(self.px, self.py, 0)
-            quat = quaternion_from_euler(0, 0, self.pth)
-            curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+                # Creating A PoseStamped msg of the current robot position for GetPlan.start
+                curr_pos = PoseStamped()
+                curr_pos.pose.position = Point(self.px, self.py, 0)
+                quat = quaternion_from_euler(0, 0, self.pth)
+                curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
 
-            # Convert grid plan to world plan
-            grid_to_world = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
-            world_point = grid_to_world(new_goal)
+                # Convert grid plan to world plan
+                grid_to_world = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
+                world_point = grid_to_world(new_goal)
 
-            goal_pos = PoseStamped()
-            goal_pos.pose.position = Point(world_point[0], world_point[1], 0)
-            quat = quaternion_from_euler(0, 0, 0)
-            goal_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+                goal_pos = PoseStamped()
+                goal_pos.pose.position = Point(world_point[0], world_point[1], 0)
+                quat = quaternion_from_euler(0, 0, 0)
+                goal_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
 
-            # Request Plan
-            path_planner = rospy.ServiceProxy('plan_path', GetPlan)
-            get_plan_obj = path_planner(curr_pos, goal_pos, TOLERANCE=0.1)
+                # Request Plan
+                path_planner = rospy.ServiceProxy('plan_path', GetPlan)
+                get_plan_obj = path_planner(curr_pos, goal_pos, TOLERANCE=0.1)
 
-            set_nav_path = rospy.ServiceProxy('reset_nav_goal_and_set_new_path', "Path->void")
-            set_nav_path(get_plan_obj)
+                set_nav_path = rospy.ServiceProxy('reset_nav_goal_and_set_new_path', "Path->void")
+                set_nav_path(get_plan_obj)
 
 
         #Then send this position to the new navigation node
@@ -329,7 +340,6 @@ def phase_one_loop(self):
             return Path()
 
         # This pulls the newest map and solves C space
-        self.map.refresh_map()
         mapdata = calc_cpsace()
         # ## Execute A*
         start = self.world_to_grid(msg.start.pose.position)
