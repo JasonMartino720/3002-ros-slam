@@ -4,9 +4,10 @@ import math
 
 import rospy
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
-from nav_msgs.msg import GridCells, Path, OccupancyGrid
+from nav_msgs.msg import GridCells, Path, OccupancyGrid, Odometry
 from nav_msgs.srv import GetPlan
 from tf_conversions.posemath import transformations
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 from priority_queue import PriorityQueue
 
@@ -35,6 +36,8 @@ class PathPlanner:
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
+        self.update_GMap()
+
         def update_odometry(self, msg):
             """
             Updates the current pose of the robot.
@@ -44,9 +47,16 @@ class PathPlanner:
             self.angular_z = msg.twist.twist.angular.z
             self.px = msg.pose.pose.position.x
             self.py = msg.pose.pose.position.y
-            self.pth = orientation_to_yaw(msg.pose.pose.orientation)
+            self.pth = self.orientation_to_yaw(msg.pose.pose.orientation)
             self.newOdomReady = True
             self.newOdomReady2 = True
+
+    def update_GMap(self):
+        try:
+            frontier_map_srv = rospy.ServiceProxy('cspace', OccupancyGrid)
+            self.mapdata = frontier_map_srv()
+        except rospy.ServiceException, e:
+            return None
 
     def phase_one_loop(self):
         while True:
@@ -82,7 +92,7 @@ class PathPlanner:
             curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
             curr_goal = curr_nav_goal()
             new_goal = sorted_centeroids[0]
-            if not is_within_threshold(curr_goal, new_goal):
+            if not self.is_within_threshold(curr_goal, new_goal):
             # <If yes> convert grid plan to world plan ()
 
 
@@ -125,6 +135,16 @@ class PathPlanner:
         """
         return math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
 
+    @staticmethod
+    def orientation_to_yaw(orientation):
+        """
+        Takes a pose.orientation object and returns the yaw (z rotation)
+        """
+        quat_orig = orientation
+        quat_list = [quat_orig.x, quat_orig.y, quat_orig.z, quat_orig.w]
+        (roll, pitch, yaw) = euler_from_quaternion(quat_list)
+        return yaw
+
     def grid_to_world(self, x, y):
         """
         Transforms a cell coordinate in the occupancy grid into a world coordinate.
@@ -135,8 +155,8 @@ class PathPlanner:
         """
         world_point = Point()
 
-        world_point.x = (x + 0.5) * self.map.info.resolution + self.map.info.origin.position.x
-        world_point.y = (y + 0.5) * self.map.info.resolution + self.map.info.origin.position.y
+        world_point.x = (x + 0.5) * self.mapdata.info.resolution + self.mapdata.info.origin.position.x
+        world_point.y = (y + 0.5) * self.mapdata.info.resolution + self.mapdata.info.origin.position.y
         # rospy.loginfo("mapdata.info: " + str(mapdata.info))
         # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
         # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
@@ -150,8 +170,8 @@ class PathPlanner:
         :return        [(int,int)]     The cell position as a tuple.
         """
 
-        x = int((wp.x - self.map.info.origin.position.x) / self.map.info.resolution)
-        y = int((wp.y - self.map.info.origin.position.y) / self.map.info.resolution)
+        x = int((wp.x - self.mapdata.info.origin.position.x) / self.mapdata.info.resolution)
+        y = int((wp.y - self.mapdata.info.origin.position.y) / self.mapdata.info.resolution)
 
         grid_coord = (x, y)
 
@@ -178,7 +198,7 @@ class PathPlanner:
             orient = Quaternion(q[0], q[1], q[2], q[3])
             single_pose.pose.position = pos
             single_pose.pose.orientation = orient
-            single_pose.header = self.map.header
+            single_pose.header = self.mapdata.header
             posestamp_list.append(single_pose)
         return posestamp_list
 
@@ -323,7 +343,7 @@ class PathPlanner:
         path_message = Path()
         rospy.loginfo("The path is: " + str(path))
         path_message.poses = PathPlanner.path_to_poses(self, path)
-        path_message.header = self.map.header
+        path_message.header = self.mapdata.header
         rospy.loginfo("path_message: " + str(path_message))
         return path_message
 
@@ -335,16 +355,16 @@ class PathPlanner:
         """
         ## Request the map
         ## In case of error, return an empty path
-        if self.map is None:
+        if self.mapdata is None:
             rospy.logerr("Path Path called but map data was of type 'None'")
             return Path()
 
         # This pulls the newest map and solves C space
-        mapdata = calc_cpsace()
+
         # ## Execute A*
         start = self.world_to_grid(msg.start.pose.position)
         goal = self.world_to_grid(msg.goal.pose.position)
-        path = self.a_star(mapdata, start, goal)
+        path = self.a_star(self.mapdata, start, goal)
         # rospy.loginfo("a_star output: " + str(path))
 
         # ## Optimize waypoints
@@ -406,6 +426,26 @@ class PathPlanner:
             returnList.append((x + 1, y + 1))
 
         return returnList
+
+    def is_cell_walkable(self, x, y):
+        """
+        A cell is walkable if all of these conditions are true:
+        1. It is within the boundaries of the grid;
+        2. It is free (not unknown, not occupied by an obstacle)
+        :param mapdata [OccupancyGrid] The map information.
+        :param x       [int]           The X coordinate in the grid.
+        :param y       [int]           The Y coordinate in the grid.
+        :return        [boolean]       True if the cell is walkable, False otherwise
+        """
+
+        ### REQUIRED CREDIT
+        "if the x and y coordinates are out of bounds"
+        return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) < 0.196
+
+    def is_within_threshold(pos1, pos2):
+        # Are the two thresholds close enough to be considered the same centeroids?
+        # return boolean
+        pass
 
 
 if __name__ == '__main__':

@@ -128,7 +128,6 @@ class Frontier:
         #Use reccursion (or not) to go through each of the neighboors and see if they are a edge cell (with value 100)
         #or not. If they are a edge, check the neighbors for this cell as well.
         for cells in self.neighbors_of_8(random_point[0], random_point[1]):
-            #I ended here:
             # I ended here:
             # I ended here:
             # I ended here:
@@ -136,13 +135,13 @@ class Frontier:
             # I ended here:
 
 
-        #Each time you see a a new neighbor that is a edge cell, add it to the cluster you are currently building
-        #Repeat the reccurtion until you have no more neighbors that are edges left.
+            #Each time you see a a new neighbor that is a edge cell, add it to the cluster you are currently building
+            #Repeat the reccurtion until you have no more neighbors that are edges left.
 
-        #End of the loop that find a new random cell
-        #This should loop until you have catergorized every cell
+            #End of the loop that find a new random cell
+            #This should loop until you have catergorized every cell
 
-        frontier_list = [()]
+            frontier_list = [()]
 
         return frontier_list
 
