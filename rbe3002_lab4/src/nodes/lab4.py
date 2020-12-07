@@ -7,13 +7,6 @@ from nav_msgs.srv import GetPlan
 from geometry_msgs.msg import PoseStamped, Twist, Vector3, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-
-def is_within_threshold(pos1, pos2):
-    #Are the two thresholds close enough to be considered the same centeroids?
-    #return boolean
-    pass
-
-
 class Lab4:
 
     def __init__(self):
@@ -225,6 +218,16 @@ class Lab4:
         rospy.spin()
 
 
+def orientation_to_yaw(orientation):
+    """
+    Takes a pose.orientation object and returns the yaw (z rotation)
+    """
+    quat_orig = orientation
+    quat_list = [quat_orig.x, quat_orig.y, quat_orig.z, quat_orig.w]
+    (roll, pitch, yaw) = euler_from_quaternion(quat_list)
+    return yaw
+
+
 def dist_between(ix, iy, x, y):
     """
     Get the magnitude of the displacement between two points
@@ -247,14 +250,7 @@ def normalize_angle(angle):
     return finalAngle
 
 
-def orientation_to_yaw(orientation):
-    """
-    Takes a pose.orientation object and returns the yaw (z rotation)
-    """
-    quat_orig = orientation
-    quat_list = [quat_orig.x, quat_orig.y, quat_orig.z, quat_orig.w]
-    (roll, pitch, yaw) = euler_from_quaternion(quat_list)
-    return yaw
+
 
 def angle_to_goal(curr_x, curr_y, goal_x, goal_y):
     """
