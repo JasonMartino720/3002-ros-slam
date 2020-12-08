@@ -8,6 +8,7 @@ from nav_msgs.msg import GridCells, Path, OccupancyGrid, Odometry
 from nav_msgs.srv import GetPlan
 from tf_conversions.posemath import transformations
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from frontier import Frontier
 
 from priority_queue import PriorityQueue
 
@@ -72,9 +73,11 @@ class PathPlanner:
             #Path Plan to each frontier
                 #Using the conversion layer, we will convert curr pos to grid cells
 
+            centroid_list = Frontier()
             distance_list = list()
-            for centroid in centroid_list:
 
+            #Somebody check if this is correct implementation - by Josh
+            for centroid in centroid_list.return_frontier(frontier_list):
                 path_planner = rospy.ServiceProxy('request_distance', "tuple,tuple->Int")
                 distance_to_frontier = path_planner(grid_point, centroid)
                 distance_list.append(distance_to_frontier)
