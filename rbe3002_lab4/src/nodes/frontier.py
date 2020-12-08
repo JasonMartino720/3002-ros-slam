@@ -17,7 +17,7 @@ class Frontier:
 
         # Create a publisher for the C-space (the enlarged occupancy grid)
         # The topic is "/path_planner/cspace", the message type is GridCells
-        self.pubCspace = rospy.Service("cspace", OccupancyGrid, self.calc_cspace)
+        self.pubCspace = rospy.Publisher("/map/cspace", OccupancyGrid, queue_size=10)
 
         rospy.Subscriber("/map", OccupancyGrid, self.update_map)
 
