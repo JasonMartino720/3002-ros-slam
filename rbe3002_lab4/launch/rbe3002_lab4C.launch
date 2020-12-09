@@ -2,5 +2,6 @@
 
       <node pkg="rbe3002_lab4" type="path_planner.py" name="path_planner" />
       <node pkg="rbe3002_lab4" type="lab4.py" name="lab4" />
+	  <node pkg="rbe3002_lab4" type="frontier.py" name="frontier" />
 
   </launch>

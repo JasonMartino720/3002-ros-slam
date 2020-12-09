@@ -37,8 +37,9 @@ class PathPlanner:
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
-        rospy.wait_for_service('cspace')
+        # rospy.wait_for_service('cspace')
         self.set_info()
+        self.phase_one_loop()
 
 
     def update_odometry(self, msg):
@@ -67,8 +68,13 @@ class PathPlanner:
             #Update C-space
             #Detect frontier cells with edge dectection
             #Cluster frontier cells
-            frontier_srv = rospy.ServiceProxy('frontier', list)
-            frontier_list = frontier_srv()
+
+
+            #Attribute error
+            # frontier_srv = rospy.ServiceProxy('frontiers', list)
+            #frontier_list = frontier_srv()
+            #temporary frontier_list()
+            frontier_list = list()
                 #Are we expecting a list of lists of tuples
                 #(x,y),(x,y)...
                 # OR
@@ -83,6 +89,8 @@ class PathPlanner:
             centroidX = 0
             centroidY = 0
 
+            rospy.loginfo("inside phase_one_loop")
+
             for cluster in frontier_list:
                 for point in cluster:
                     centroidX += point[0]
@@ -91,16 +99,20 @@ class PathPlanner:
                 centroidY /= len(cluster)
                 centroid_list.append((centroidX, centroidY))
 
+            rospy.loginfo("centroid_list: " + str(centroid_list))
+
             for centroid in centroid_list:
                 pt = Point(self.px, self.py)
                 pointlist = self.a_star(self.world_to_grid(pt), centroid)
                 distance_to_frontier = len(pointlist)
                 distance_list.append(distance_to_frontier)
+            rospy.loginfo("distance_list: " + str(distance_list))
 
             #Return sorted list with gird plan length and size of frontier
             size_list = list()
             for cluster in frontier_list:
                 size_list.append(len(cluster))
+
 
             metric_list = list()
             for size, distance in zip(size_list, distance_list):
@@ -111,8 +123,14 @@ class PathPlanner:
             sorted_centeroids = [x for _, x, _, _ in combined]
 
             #Has goal changed?
-            curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
-            curr_goal = curr_nav_goal()
+            # attribute error in line 123
+            # curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
+            # curr_goal = curr_nav_goal()
+            # temporary curr_goal
+            curr_goal = (0,0)
+
+            # next line is index out of range error, at this point, I think the sorted_centeroids list is empty
+            # because all of the lists are empty, including distance_list and centroid_list from above.
             new_goal = sorted_centeroids[0]
             if not self.is_within_threshold(curr_goal, new_goal):
             # <If yes> convert grid plan to world plan ()
@@ -124,6 +142,8 @@ class PathPlanner:
                 curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
 
                 # Convert grid plan to world plan
+
+                # no attribute error
                 grid_to_world = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
                 world_point = grid_to_world(new_goal)
 
@@ -136,6 +156,7 @@ class PathPlanner:
                 path_planner = rospy.ServiceProxy('plan_path', GetPlan)
                 get_plan_obj = path_planner(curr_pos, goal_pos, TOLERANCE=0.1)
 
+                #no attribute error
                 set_nav_path = rospy.ServiceProxy('reset_nav_goal_and_set_new_path', "Path->void")
                 set_nav_path(get_plan_obj)
 
@@ -468,7 +489,7 @@ class PathPlanner:
         "if the x and y coordinates are out of bounds"
         return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) < 0.196
 
-    def is_within_threshold(pos1, pos2):
+    def is_within_threshold(self, pos1, pos2):
         # Are the two thresholds close enough to be considered the same centeroids?
         # return boolean
         pass
