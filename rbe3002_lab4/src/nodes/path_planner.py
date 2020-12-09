@@ -5,7 +5,7 @@ import math
 import rospy
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
 from nav_msgs.msg import GridCells, Path, OccupancyGrid, Odometry
-from nav_msgs.srv import GetPlan
+from nav_msgs.srv import GetPlan, GetMap
 from tf_conversions.posemath import transformations
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from frontier import Frontier
@@ -34,8 +34,6 @@ class PathPlanner:
         ### When a message is received, call self.go_to
         rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.phase_two_loop())
 
-        rospy.Subscriber("cspace", OccupancyGrid, self.update_frontier_cspace)
-
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
@@ -53,13 +51,17 @@ class PathPlanner:
         self.newOdomReady = True
         self.newOdomReady2 = True
 
-    def update_frontier_cspace(self, occGrid):
-        self.cspace = occGrid
-
+    def update_cspace(self, occGrid):
+        cspace_srv = rospy.ServiceProxy('csapce', GetMap)
+        try:
+            self.cspace = cspace_srv
+        except rospy.ServiceException, e:
+            self.cspace = None
 
     def phase_one_loop(self):
         while True:
             #Update C-space
+            self.update_cspace()
             #Detect frontier cells with edge dectection
             #Cluster frontier cells
             frontier_srv = rospy.ServiceProxy('frontier_service_name', list)
