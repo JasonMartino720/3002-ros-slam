@@ -67,7 +67,7 @@ class PathPlanner:
             #Update C-space
             #Detect frontier cells with edge dectection
             #Cluster frontier cells
-            frontier_srv = rospy.ServiceProxy('frontier_service_name', list)
+            frontier_srv = rospy.ServiceProxy('frontier', list)
             frontier_list = frontier_srv()
                 #Are we expecting a list of lists of tuples
                 #(x,y),(x,y)...
@@ -76,53 +76,69 @@ class PathPlanner:
             #Path Plan to each frontier
                 #Using the conversion layer, we will convert curr pos to grid cells
 
-            centroid_list = Frontier()
+
+            centroid_list = list()
             distance_list = list()
 
-            # #Somebody check if this is correct implementation - by Josh
-            # for centroid in centroid_list.return_frontier(frontier_list):
-            #     path_planner = rospy.ServiceProxy('request_distance', "tuple,tuple->Int")
-            #     distance_to_frontier = path_planner(grid_point, centroid)
-            #     distance_list.append(distance_to_frontier)
-            #
-            # #Return sorted list with gird plan length and size of frontier
-            # metric_list = list()
-            # for size, distance in zip(size_list, distance_list):
-            #     metric = float(size) / float(distance)
-            #     metric_list.append(metric)
-            #
-            # combined = sorted(zip(metric_list, centroid_list, size_list, distance_list))
-            # sorted_centeroids = [x for _, x, _, _ in combined]
+            centroidX = 0
+            centroidY = 0
 
-            # #Has goal changed?
-            # curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
-            # curr_goal = curr_nav_goal()
-            # new_goal = sorted_centeroids[0]
-            # if not self.is_within_threshold(curr_goal, new_goal):
-            # # <If yes> convert grid plan to world plan ()
-            #
-            #
-            #     # Creating A PoseStamped msg of the current robot position for GetPlan.start
-            #     curr_pos = PoseStamped()
-            #     curr_pos.pose.position = Point(self.px, self.py, 0)
-            #     quat = quaternion_from_euler(0, 0, self.pth)
-            #     curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-            #
-            #     # Convert grid plan to world plan
-            #     grid_to_world = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
-            #     world_point = grid_to_world(new_goal)
-            #
-            #     goal_pos = PoseStamped()
-            #     goal_pos.pose.position = Point(world_point[0], world_point[1], 0)
-            #     quat = quaternion_from_euler(0, 0, 0)
-            #     goal_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-            #
-            #     # Request Plan
-            #     path_planner = rospy.ServiceProxy('plan_path', GetPlan)
-            #     get_plan_obj = path_planner(curr_pos, goal_pos, TOLERANCE=0.1)
-            #
-            #     set_nav_path = rospy.ServiceProxy('reset_nav_goal_and_set_new_path', "Path->void")
-            #     set_nav_path(get_plan_obj)
+            for cluster in frontier_list:
+                for point in cluster:
+                    centroidX += point[0]
+                    centroidY += point[1]
+                centroidX /= len(cluster)
+                centroidY /= len(cluster)
+                centroid_list.append((centroidX, centroidY))
+
+            for centroid in centroid_list:
+                pt = Point(self.px, self.py)
+                pointlist = self.a_star(self.world_to_grid(pt), centroid)
+                distance_to_frontier = len(pointlist)
+                distance_list.append(distance_to_frontier)
+
+            #Return sorted list with gird plan length and size of frontier
+            size_list = list()
+            for cluster in frontier_list:
+                size_list.append(len(cluster))
+
+            metric_list = list()
+            for size, distance in zip(size_list, distance_list):
+                metric = float(size) / float(distance)
+                metric_list.append(metric)
+
+            combined = reversed(sorted(zip(metric_list, centroid_list, size_list, distance_list)))
+            sorted_centeroids = [x for _, x, _, _ in combined]
+
+            #Has goal changed?
+            curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
+            curr_goal = curr_nav_goal()
+            new_goal = sorted_centeroids[0]
+            if not self.is_within_threshold(curr_goal, new_goal):
+            # <If yes> convert grid plan to world plan ()
+
+                # Creating A PoseStamped msg of the current robot position for GetPlan.start
+                curr_pos = PoseStamped()
+                curr_pos.pose.position = Point(self.px, self.py, 0)
+                quat = quaternion_from_euler(0, 0, self.pth)
+                curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+
+                # Convert grid plan to world plan
+                grid_to_world = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
+                world_point = grid_to_world(new_goal)
+
+                goal_pos = PoseStamped()
+                goal_pos.pose.position = Point(world_point[0], world_point[1], 0)
+                quat = quaternion_from_euler(0, 0, 0)
+                goal_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+
+                # Request Plan
+                path_planner = rospy.ServiceProxy('plan_path', GetPlan)
+                get_plan_obj = path_planner(curr_pos, goal_pos, TOLERANCE=0.1)
+
+                set_nav_path = rospy.ServiceProxy('reset_nav_goal_and_set_new_path', "Path->void")
+                set_nav_path(get_plan_obj)
+
 
 
         #Then send this position to the new navigation node
@@ -362,7 +378,7 @@ class PathPlanner:
         rospy.loginfo("path_message: " + str(path_message))
         return path_message
 
-    def get_path_to_point(self, msg):
+    def get_path_to_point(self, start, goal):
         """
         Plans a path between the start and goal locations in the requested.
         Internally uses A* to plan the optimal path.
@@ -372,8 +388,8 @@ class PathPlanner:
         # This pulls the newest map and solves C space
 
         # ## Execute A*
-        start = self.world_to_grid(msg.start.pose.position)
-        goal = self.world_to_grid(msg.goal.pose.position)
+        start = self.world_to_grid(start.pose.position)
+        goal = self.world_to_grid(goal.pose.position)
         path = self.a_star(start, goal)
         # rospy.loginfo("a_star output: " + str(path))
 
