@@ -37,6 +37,9 @@ class PathPlanner:
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
+        rospy.wait_for_service('cspace')
+        self.set_info()
+
 
     def update_odometry(self, msg):
         """
@@ -51,17 +54,17 @@ class PathPlanner:
         self.newOdomReady = True
         self.newOdomReady2 = True
 
-    def update_cspace(self, occGrid):
+    def set_info(self):
         cspace_srv = rospy.ServiceProxy('csapce', GetMap)
         try:
-            self.cspace = cspace_srv
+            self.info = cspace_srv().info
+            self.header = cspace_srv().header
         except rospy.ServiceException, e:
-            self.cspace = None
+            self.info = None
 
     def phase_one_loop(self):
         while True:
             #Update C-space
-            self.update_cspace()
             #Detect frontier cells with edge dectection
             #Cluster frontier cells
             frontier_srv = rospy.ServiceProxy('frontier_service_name', list)
@@ -161,8 +164,8 @@ class PathPlanner:
         """
         world_point = Point()
 
-        world_point.x = (x + 0.5) * self.cspace.info.resolution + self.cspace.info.origin.position.x
-        world_point.y = (y + 0.5) * self.cspace.info.resolution + self.cspace.info.origin.position.y
+        world_point.x = (x + 0.5) * self.info.resolution + self.info.origin.position.x
+        world_point.y = (y + 0.5) * self.info.resolution + self.info.origin.position.y
         # rospy.loginfo("mapdata.info: " + str(mapdata.info))
         # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
         # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
@@ -176,8 +179,8 @@ class PathPlanner:
         :return        [(int,int)]     The cell position as a tuple.
         """
 
-        x = int((wp.x - self.cspace.info.origin.position.x) / self.cspace.info.resolution)
-        y = int((wp.y - self.cspace.info.origin.position.y) / self.cspace.info.resolution)
+        x = int((wp.x - self.info.origin.position.x) / self.info.resolution)
+        y = int((wp.y - self.info.origin.position.y) / self.info.resolution)
 
         grid_coord = (x, y)
 
@@ -204,13 +207,19 @@ class PathPlanner:
             orient = Quaternion(q[0], q[1], q[2], q[3])
             single_pose.pose.position = pos
             single_pose.pose.orientation = orient
-            single_pose.header = self.cspace.header
+            single_pose.header = self.header
             posestamp_list.append(single_pose)
         return posestamp_list
 
-    def a_star(self, mapdata, start, goal):
+    def a_star(self, start, goal):
         ### REQUIRED CREDIT
         # rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
+        cspace_srv = rospy.ServiceProxy('csapce', GetMap)
+        try:
+            mapdata = cspace_srv
+        except rospy.ServiceException, e:
+            mapdata = None
+
         frontier = PriorityQueue()
         frontier.put(start, 0)
 
@@ -349,7 +358,7 @@ class PathPlanner:
         path_message = Path()
         rospy.loginfo("The path is: " + str(path))
         path_message.poses = PathPlanner.path_to_poses(self, path)
-        path_message.header = self.cspace.header
+        path_message.header = self.header
         rospy.loginfo("path_message: " + str(path_message))
         return path_message
 
@@ -359,18 +368,13 @@ class PathPlanner:
         Internally uses A* to plan the optimal path.
         :param req
         """
-        ## Request the map
-        ## In case of error, return an empty path
-        if self.cspace is None:
-            rospy.logerr("Path Path called but map data was of type 'None'")
-            return Path()
 
         # This pulls the newest map and solves C space
 
         # ## Execute A*
         start = self.world_to_grid(msg.start.pose.position)
         goal = self.world_to_grid(msg.goal.pose.position)
-        path = self.a_star(self.cspace, start, goal)
+        path = self.a_star(start, goal)
         # rospy.loginfo("a_star output: " + str(path))
 
         # ## Optimize waypoints
