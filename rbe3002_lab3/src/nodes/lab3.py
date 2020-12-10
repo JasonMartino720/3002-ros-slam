@@ -171,17 +171,18 @@ class Lab3:
         self.send_speed(0, 0)
 
     def drive_and_turn(self, angular_speed_lim, linear_speed_lim, goal):
-        drive_Kp = 2.140
+        drive_Kp = 4.25#2.140
         # drive_Kp = 0.440
         # drive_Ki = 0.05
         drive_Ki = 0
         drive_Kd = 4
-        turn_Kp = -22.5
+        turn_Kp = -4.0 #-22.5
         # turn_Ki = -1
         turn_Ki = 0
         turn_Kd = -12
 
         TOLERANCE = 0.01 #in meters from goal
+        TURN_HEADSTART = 0.5;
 
         # curr_abs_angle = self.absolute_angle(bool(goalAngle > 0))
 
@@ -207,9 +208,9 @@ class Lab3:
                 turn_pidOutput = (turn_Kp * turn_error) + (turn_Ki * turn_integral) + (turn_Kd * turn_derivative)
 
                 turn_clamped = max(-angular_speed_lim, min(turn_pidOutput, angular_speed_lim))
-                rospy.loginfo(
-                    'The target orientation is %f we are currently at %f the error is %f, the intergeral is %f, deriviate is %f -> clamped is %f' % (
-                        turn_target_angle, self.pth, turn_error, turn_integral, turn_derivative, turn_clamped))
+                # rospy.loginfo(
+                #     'The target orientation is %f we are currently at %f the error is %f, the intergeral is %f, deriviate is %f -> clamped is %f' % (
+                #         turn_target_angle, self.pth, turn_error, turn_integral, turn_derivative, turn_clamped))
 
                 #Drive Section Below
 
@@ -224,11 +225,16 @@ class Lab3:
 
                 drive_clamped = max(-linear_speed_lim, min(drive_pidOutput, linear_speed_lim))
 
-                rospy.loginfo(
-                    'The target pos is %f, %f we are currently at %f, %f error %f int %f derivative %f clamped is %f' % (
-                        self.goal.x, self.goal.y, self.px, self.py, drive_error, drive_integral, drive_derivative, drive_clamped))
+                if(rospy.get_time() >  self.startPIDTime + TURN_HEADSTART):
+                    # rospy.loginfo(
+                        # 'The target pos is %f, %f we are currently at %f, %f error %f int %f derivative %f clamped is %f' % (
+                        #     self.goal.x, self.goal.y, self.px, self.py, drive_error, drive_integral, drive_derivative,
+                        #     drive_clamped))
 
-                self.send_speed(drive_clamped, turn_clamped)
+                    self.send_speed(drive_clamped, turn_clamped)
+                else:
+                    rospy.loginfo("Only Turning ")
+                    self.send_speed(0, turn_clamped)
 
         self.send_speed(0, 0)
 
@@ -261,6 +267,7 @@ class Lab3:
         self.goal = msg.pose.position
 
         rospy.loginfo("Going to goal using drive and turn")
+        self.startPIDTime = rospy.get_time()
         self.drive_and_turn(MAX_ROTATION_SPEED, MAX_DRIVE_SPEED, msg.pose.position)
         rospy.sleep(0.5)
 

@@ -10,7 +10,7 @@
   	<node pkg="rqt_console" type="rqt_console" name="rqt_console" />
   	<node pkg="rqt_graph" type="rqt_graph" name="rqt_graph" />
 
-	<include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch">
+	<!--include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch"-->
 	
 
   </launch>

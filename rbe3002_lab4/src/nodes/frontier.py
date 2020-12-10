@@ -100,17 +100,17 @@ class Frontier:
         assigned_so_far = 0
         need_assignment = 0
 
-        rospy.loginfo(egde_occupancy_grid)
-        rospy.loginfo("Clustering Input")
+        # rospy.loginfo(egde_occupancy_grid)
+        # rospy.loginfo("Clustering Input")
         dilated = self.dilated_and_eroded_grid(3, egde_occupancy_grid)
-        rospy.loginfo(dilated)
-        rospy.loginfo("Dilate output")
+        # rospy.loginfo(dilated)
+        # rospy.loginfo("Dilate output")
 
         for cells in dilated:
             if cells == 100:
                 need_assignment += 1
 
-        rospy.loginfo("Found %d cells that need assignment" %(need_assignment))
+        # rospy.loginfo("Found %d cells that need assignment" %(need_assignment))
 
         #frontier_list is a list of clusters
         frontier_list = list()
@@ -139,9 +139,9 @@ class Frontier:
             #This should loop until you have catergorized every cell
             random_point = (x_random_value, y_random_value)
 
-            rospy.loginfo("Length of dilated %d" % (len(dilated)))
-            rospy.loginfo("Random point is (%d, %d)" %(random_point[0], random_point[1]))
-            rospy.loginfo("Resulting index is %d" % (self.grid_to_index(random_point[0], random_point[1])))
+            # rospy.loginfo("Length of dilated %d" % (len(dilated)))
+            # rospy.loginfo("Random point is (%d, %d)" %(random_point[0], random_point[1]))
+            # rospy.loginfo("Resulting index is %d" % (self.grid_to_index(random_point[0], random_point[1])))
 
             if not self.is_assigned(random_point, frontier_list) and dilated[self.grid_to_index(random_point[0], random_point[1])] == 100:
                 # cluster is a list of tuples that represents points/cells that are unassigned and edged
@@ -180,8 +180,8 @@ class Frontier:
         #Assumign update Map has already given us the newest map
 
         OBSTACLE_THRESH = 90
-        rospy.loginfo(self.map)
-        rospy.loginfo("Calculating edge (next current map)")
+        # rospy.loginfo(self.map)
+        # rospy.loginfo("Calculating edge (next current map)")
         frontier_map = copy.deepcopy(self.map)
         frontier_map_data_replacement = (0, ) * len(frontier_map.data)
 
@@ -309,20 +309,34 @@ class Frontier:
         """
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
-
+        set_num = 2
         paddedArray = list(self.map.data)
 
-        ## Go through each cell in the occupancy grid
-        for x in range(self.map.info.height):
-            for y in range(self.map.info.width):
-                ## Inflate the obstacles where necessary
-                if self.map.data[self.grid_to_index(x, y)] > OBSTACLE_THRESH:
-                    paddedArray[self.grid_to_index(x, y)] = 100
-                    for neighbor in self.neighbors_of_8(x, y):
-                        x3, y3 = self.force_inbound(neighbor[0], neighbor[1])
-                        paddedArray[self.grid_to_index(x3, y3)] = 100
+        # ## Go through each cell in the occupancy grid
+        # for x in range(self.map.info.height):
+        #     for y in range(self.map.info.width):
+        #         ## Inflate the obstacles where necessary
+        #         if self.map.data[self.grid_to_index(x, y)] > OBSTACLE_THRESH:
+        #             paddedArray[self.grid_to_index(x, y)] = 100
+        #             for neighbor in self.neighbors_of_8(x, y):
+        #                 x3, y3 = self.force_inbound(neighbor[0], neighbor[1])
+        #                 paddedArray[self.grid_to_index(x3, y3)] = 100
+        # original array
+        grid_array = paddedArray
+        coppy_array = list(copy.deepcopy(grid_array))
+        # Dilationthe cell is not assigned
+        for count in range(set_num):
+            for x in range(self.map.info.height):
+                for y in range(self.map.info.width):
+                    ## Inflate the obstacles where necessary
+                    if grid_array[self.grid_to_index(x, y)] >= 90:
+                        # coppy_array[self.grid_to_index(x, y)] = 100
+                        for neighbor in self.neighbors_of_8(x, y):
+                            newX, newY = self.force_inbound(neighbor[0], neighbor[1])
+                            coppy_array[self.grid_to_index(newX, newY)] = 100
+            grid_array = tuple(copy.deepcopy(coppy_array))
 
-        paddedArray = tuple(paddedArray)
+        paddedArray = tuple(grid_array)
         gridCellsList = []
 
         for x in range(self.map.info.height):
