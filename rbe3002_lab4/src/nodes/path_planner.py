@@ -9,6 +9,8 @@ from nav_msgs.srv import GetPlan, GetMap
 from tf_conversions.posemath import transformations
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from rbe3002_lab4.srv._frontiers import frontiers, frontiersResponse, frontiersRequest
+from rbe3002_lab4.msg._tupleMSG import tupleMSG
+from rbe3002_lab4.msg._clusterMSG import clusterMSG
 
 from priority_queue import PriorityQueue
 
@@ -37,7 +39,7 @@ class PathPlanner:
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
 
-        # rospy.wait_for_service('cspace')
+        rospy.wait_for_service('cspace')
         self.set_info()
         self.phase_one_loop()
 
@@ -56,24 +58,28 @@ class PathPlanner:
         self.newOdomReady2 = True
 
     def set_info(self):
-        cspace_srv = rospy.ServiceProxy('csapce', GetMap)
+        cspace_srv = rospy.ServiceProxy('cspace', GetMap)
         try:
-            self.info = cspace_srv().info
-            self.header = cspace_srv().header
+            self.info = cspace_srv().map.info
+            self.header = cspace_srv().map.header
         except rospy.ServiceException, e:
+            rospy.logerr(e)
+            rospy.logerr("Info was not set!")
             self.info = None
 
     def phase_one_loop(self):
         while True:
             #Update C-space
             #Detect frontier cells with edge dectection
+            cspace_srv = rospy.ServiceProxy('cspace', GetMap)
+            self.map = cspace_srv().map
             #Cluster frontier cells
 
             rospy.loginfo("Calling frontier service")
 
             #Attribute error
             frontier_srv = rospy.ServiceProxy('frontierTopic', frontiers)
-            frontier_list = frontier_srv()
+            frontier_list = frontier_srv().list_of_cells
 
             rospy.loginfo(frontier_list)
             rospy.loginfo("Return from frontier service")
@@ -96,8 +102,10 @@ class PathPlanner:
 
             rospy.loginfo("inside phase_one_loop")
 
-            for cluster in frontier_list:
-                for point in cluster:
+            for cluster_MSG in frontier_list:
+                cluster = cluster_MSG.clusterDATA
+                for point_MSG in cluster:
+                    point = point_MSG.tupleDATA
                     centroidX += point[0]
                     centroidY += point[1]
                 centroidX /= len(cluster)
@@ -107,7 +115,7 @@ class PathPlanner:
             rospy.loginfo("centroid_list: " + str(centroid_list))
 
             for centroid in centroid_list:
-                pt = Point(self.px, self.py)
+                pt = Point(self.px, self.py, 0)
                 pointlist = self.a_star(self.world_to_grid(pt), centroid)
                 distance_to_frontier = len(pointlist)
                 distance_list.append(distance_to_frontier)
@@ -115,7 +123,8 @@ class PathPlanner:
 
             #Return sorted list with gird plan length and size of frontier
             size_list = list()
-            for cluster in frontier_list:
+            for cluster_MSG in frontier_list:
+                cluster = cluster_MSG.clusterDATA
                 size_list.append(len(cluster))
 
 
@@ -155,23 +164,19 @@ class PathPlanner:
                 curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
 
                 # Convert grid plan to world plan
-
-                # no attribute error
-                grid_to_world = rospy.ServiceProxy('converter_service_name', "Tuple->Tuple")
-                world_point = grid_to_world(new_goal)
+                world_point = self.grid_to_world(new_goal[0], new_goal[1])
 
                 goal_pos = PoseStamped()
-                goal_pos.pose.position = Point(world_point[0], world_point[1], 0)
+                goal_pos.pose.position = world_point
                 quat = quaternion_from_euler(0, 0, 0)
                 goal_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
 
                 # Request Plan
-                path_planner = rospy.ServiceProxy('plan_path', GetPlan)
-                get_plan_obj = path_planner(curr_pos, goal_pos, TOLERANCE=0.1)
+                plan_to_send_robot = self.get_path_to_point(curr_pos, goal_pos)
 
-                #no attribute error
-                set_nav_path = rospy.ServiceProxy('reset_nav_goal_and_set_new_path', "Path->void")
-                set_nav_path(get_plan_obj)
+                #Jason please send this plan to the Lab 4 robot and we're done
+
+                # set_nav_path(get_plan_obj)
 
 
 
@@ -181,6 +186,24 @@ class PathPlanner:
 
     def phase_two_loop(self):
         return None
+
+    def grid_to_world(self, x, y):
+        """
+        Transforms a cell coordinate in the occupancy grid into a world coordinate.
+        :param mapdata [OccupancyGrid] The map information.
+        :param x       [int]           The cell X coordinate.
+        :param y       [int]           The cell Y coordinate.
+        :return        [Point]         The position in the world.
+        """
+        world_point = Point()
+
+        world_point.x = (x + 0.5) * self.map.info.resolution + self.map.info.origin.position.x
+        world_point.y = (y + 0.5) * self.map.info.resolution + self.map.info.origin.position.y
+        # rospy.loginfo("mapdata.info: " + str(mapdata.info))
+        # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
+        # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
+        return world_point
+
 
     @staticmethod
     def euclidean_distance(x1, y1, x2, y2):
@@ -264,10 +287,11 @@ class PathPlanner:
     def a_star(self, start, goal):
         ### REQUIRED CREDIT
         # rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
-        cspace_srv = rospy.ServiceProxy('csapce', GetMap)
+        cspace_srv = rospy.ServiceProxy('cspace', GetMap)
         try:
-            mapdata = cspace_srv
+            mapdata = cspace_srv()
         except rospy.ServiceException, e:
+            rospy.logerr(e)
             mapdata = None
 
         frontier = PriorityQueue()
@@ -287,7 +311,7 @@ class PathPlanner:
             if current == goal:
                 break
 
-            for neighbour in PathPlanner.neighbors_of_8(mapdata, current[0], current[1]):
+            for neighbour in PathPlanner.neighbors_of_8(self, current[0], current[1]):
                 # rospy.loginfo(str(type(cost_so_far[current])))
                 # rospy.loginfo(str(cost_so_far[current]))
                 # rospy.loginfo(str(current))
@@ -307,7 +331,7 @@ class PathPlanner:
                 # Path Visualization
                 visitedCells = []
                 for cell in visualize_path:
-                    world_point = PathPlanner.grid_to_world(mapdata, cell[0], cell[1])
+                    world_point = PathPlanner.grid_to_world(self, cell[0], cell[1])
                     # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
                     visitedCells.append(world_point)
 
@@ -315,11 +339,11 @@ class PathPlanner:
                 ## Create a GridCells message and publish it
                 # message for visualizing cells in the visualize_path list
                 pvis = GridCells()
-                pvis.cell_width = mapdata.info.resolution
-                pvis.cell_height = mapdata.info.resolution
+                pvis.cell_width = self.info.resolution
+                pvis.cell_height = self.info.resolution
                 pvis.cells = visitedCells
-                pvis.header = mapdata.header
-                self.pubVisited.publish(pvis)
+                pvis.header = self.header
+                # self.pubVisited.publish(pvis)
                 rospy.loginfo(pvis)
                 rospy.loginfo("Published this to /visited")
 
@@ -327,7 +351,7 @@ class PathPlanner:
         # Path Visualization
         visitedCells = []
         for cell in visualize_path:
-            world_point = PathPlanner.grid_to_world(mapdata, cell[0], cell[1])
+            world_point = PathPlanner.grid_to_world(self, cell[0], cell[1])
             # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
             visitedCells.append(world_point)
 
@@ -335,11 +359,11 @@ class PathPlanner:
         ## Create a GridCells message and publish it
         # message for visualizing cells in the visualize_path list
         pvis = GridCells()
-        pvis.cell_width = mapdata.info.resolution
-        pvis.cell_height = mapdata.info.resolution
+        pvis.cell_width = self.info.resolution
+        pvis.cell_height = self.info.resolution
         pvis.cells = visitedCells
-        pvis.header = mapdata.header
-        self.pubVisited.publish(pvis)
+        pvis.header = self.header
+        # self.pubVisited.publish(pvis)
         rospy.loginfo(pvis)
         rospy.loginfo("Published this to /visited")
 
@@ -507,6 +531,24 @@ class PathPlanner:
         # return boolean
         pass
 
+    def is_cell_in_bounds(self, x, y):
+        return 0 <= x < (self.info.width - 1) and (self.info.height - 1) > y >= 0
+
+    def get_cell_value(self, x, y):
+        if not self.is_cell_in_bounds(x, y):
+            raise IndexError("The cell index (%d, %d) is outside of this map (size %dx%d)" % (
+                x, y, self.info.width, self.info.height))
+        # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
+        return self.map.data[self.grid_to_index(x, y)]
+
+    def grid_to_index(self, x, y):
+        """
+        Returns the index corresponding to the given (x,y) coordinates in the occupancy grid.
+        :param x [int] The cell X coordinate.
+        :param y [int] The cell Y coordinate.
+        :return  [int] The index.
+        """
+        return y * self.map.info.width + x
 
 if __name__ == '__main__':
     PathPlanner().run()

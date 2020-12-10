@@ -6,9 +6,10 @@ import random
 
 from geometry_msgs.msg import Point
 from nav_msgs.msg import GridCells, OccupancyGrid
-from nav_msgs.srv import GetMap
+from nav_msgs.srv import GetMap, GetMapResponse
 from rbe3002_lab4.srv._frontiers import frontiers, frontiersResponse, frontiersRequest
-
+from rbe3002_lab4.msg._tupleMSG import tupleMSG
+from rbe3002_lab4.msg._clusterMSG import clusterMSG
 
 class Frontier:
 
@@ -22,12 +23,12 @@ class Frontier:
 
         # Create a publisher for the C-space (the enlarged occupancy grid)
         # The topic is "/path_planner/cspace", the message type is GridCells
-        self.pubCspace = rospy.Publisher("/cspace", GridCells, queue_size=10)
+        self.pubCspace = rospy.Publisher("/cspaceTopic", GridCells, queue_size=10)
 
         #Do we have to make a custom message or can we use a premade one?
         self.frontierService = rospy.Service('frontierTopic', frontiers, self.return_frontier)
 
-        self.cspaceService = rospy.Service('cspace', GetMap, self.calc_cspace())
+        self.cspaceService = rospy.Service('cspace', GetMap, self.calc_cspace)
 
         rospy.sleep(1.0)
         rospy.loginfo("Frontier node ready")
@@ -91,7 +92,7 @@ class Frontier:
 
         return grid_array
 
-    def return_frontier(self, msg):
+    def return_frontier(self, nothing):
 
         egde_occupancy_grid = self.get_frontier_cells()
 
@@ -153,10 +154,24 @@ class Frontier:
 
             need_assignment -= 1
 
-        rospy.loginfo(frontier_list)
-        rospy.loginfo("Fronteir list final return from service callback)")
-        retVal = frontiersResponse(frontier_list)
-        rospy.loginfo("Convertion to return type complete")
+        # rospy.loginfo(frontier_list)
+        # rospy.loginfo("Fronteir list final return from service callback)")
+        # retVal = frontiersResponse(frontier_list)
+        # rospy.loginfo("Convertion to return type complete")
+
+        #Testing
+        # test = clusterMSG((tupleMSG((0, 0)),tupleMSG((0, 1))))
+        # rospy.loginfo(test)
+
+        list_of_cluster_MSG = list()
+        for frontier in frontier_list:
+            list_of_tuple_MSG = list()
+            for cell in frontier:
+                # rospy.loginfo(type(cell))
+                list_of_tuple_MSG.append(tupleMSG(cell))
+            list_of_cluster_MSG.append(clusterMSG(list_of_tuple_MSG))
+
+        retVal = frontiersResponse(list_of_cluster_MSG)
         return retVal
 
 
@@ -288,7 +303,7 @@ class Frontier:
     def is_cell_unknown(self, x, y):
         return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) == -1
 
-    def calc_cspace(self):
+    def calc_cspace(self, msg):
         """
         Published GridCells and returns (to the service) a OccupancyGrid
         """
@@ -325,8 +340,12 @@ class Frontier:
         msg.header = self.map.header
         self.pubCspace.publish(msg)
 
+        retVal = OccupancyGrid()
+        retVal.header = self.map.header
+        retVal.info = self.map.info
+        retVal.data = paddedArray
 
-        return paddedArray
+        return retVal
 
     def grid_to_world(self, x, y):
         """
