@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   rbe3002-turtlebot
   message_generation
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -54,11 +55,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   frontiers.srv
-#   Service2.srv
-# )
+ add_service_files(
+   FILES
+   frontiers.srv
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -68,10 +68,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -102,18 +102,21 @@ find_package(catkin REQUIRED COMPONENTS
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
+#  catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES RBE3002_template
 #  CATKIN_DEPENDS rospy
 #  DEPENDS system_lib
+#  )
+
+catkin_package(
+  CATKIN_DEPENDS std_msgs message_runtime
 )
 
 ###########
 ## Build ##
 ###########
 
-## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
 # include

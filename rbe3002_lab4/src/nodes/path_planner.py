@@ -8,7 +8,7 @@ from nav_msgs.msg import GridCells, Path, OccupancyGrid, Odometry
 from nav_msgs.srv import GetPlan, GetMap
 from tf_conversions.posemath import transformations
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-from frontier import Frontier
+from rbe3002_lab4.srv._frontiers import frontiers, frontiersResponse, frontiersRequest
 
 from priority_queue import PriorityQueue
 
@@ -69,12 +69,12 @@ class PathPlanner:
             #Detect frontier cells with edge dectection
             #Cluster frontier cells
 
+            rospy.loginfo("Calling frontier service")
 
             #Attribute error
-            # frontier_srv = rospy.ServiceProxy('frontiers', list)
-            #frontier_list = frontier_srv()
-            #temporary frontier_list()
-            frontier_list = list()
+            frontier_srv = rospy.ServiceProxy('frontierTopic', frontiers)
+            frontier_list = frontier_srv()
+            rospy.loginfo(frontier_list)
                 #Are we expecting a list of lists of tuples
                 #(x,y),(x,y)...
                 # OR
@@ -123,6 +123,7 @@ class PathPlanner:
             sorted_centeroids = [x for _, x, _, _ in combined]
 
             #Has goal changed?
+            #TEMP Removed
             # attribute error in line 123
             # curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
             # curr_goal = curr_nav_goal()

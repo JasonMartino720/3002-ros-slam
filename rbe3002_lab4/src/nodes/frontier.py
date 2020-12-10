@@ -2,9 +2,11 @@
 
 import rospy
 import random
+
+from geometry_msgs.msg import Point
 from nav_msgs.msg import GridCells, OccupancyGrid
 from nav_msgs.srv import GetMap
-from frontiers.srv import frontier, frontierResponse
+from rbe3002_lab4.srv._frontiers import frontiers, frontiersResponse, frontiersRequest
 
 
 class Frontier:
@@ -13,16 +15,18 @@ class Frontier:
         rospy.loginfo("Started Frontier node")
         rospy.init_node("frontier")
 
-        #Do we have to make a custom message or can we use a premade one?
-        self.frontierService = rospy.Service('frontiers', frontier, self.return_frontier)
-
-        self.cspaceService = rospy.Service('cspace', GetMap, self.calc_cspace())
+        rospy.Subscriber("/map", OccupancyGrid, self.update_map)
 
         # Create a publisher for the C-space (the enlarged occupancy grid)
         # The topic is "/path_planner/cspace", the message type is GridCells
         self.pubCspace = rospy.Publisher("/cspace", GridCells, queue_size=10)
 
-        rospy.Subscriber("/map", OccupancyGrid, self.update_map)
+        rospy.sleep(1.0)
+
+        #Do we have to make a custom message or can we use a premade one?
+        self.frontierService = rospy.Service('frontierTopic', frontiers, self.return_frontier)
+
+        self.cspaceService = rospy.Service('cspace', GetMap, self.calc_cspace())
 
         rospy.sleep(1.0)
         rospy.loginfo("Frontier node ready")
@@ -63,14 +67,14 @@ class Frontier:
         Obstacle_thresh = 90
 
         # original array
-        grid_array = self.data
-        coppy_array = grid_array
+        grid_array = self.map.data
+        coppy_array = list(grid_array)
         # Dilationthe cell is not assigned
         for count in range(set_num):
             for x in range(self.map.info.height):
                 for y in range(self.map.info.width):
                     ## Inflate the obstacles where necessary
-                    if self.data[self.grid_to_index(x, y)] >= Obstacle_thresh:
+                    if self.map.data[self.grid_to_index(x, y)] >= Obstacle_thresh:
                         coppy_array[self.grid_to_index(x, y)] = 100
                         for neighbor in self.neighbors_of_8(x, y):
                             newX, newY = self.force_inbound(neighbor[0], neighbor[1])
@@ -82,7 +86,7 @@ class Frontier:
             for x in range(self.map.info.height):
                 for y in range(self.map.info.width):
                     ## Inflate the obstacles where necessary
-                    if self.data[self.grid_to_index(x, y)] >= Obstacle_thresh:
+                    if self.map.data[self.grid_to_index(x, y)] >= Obstacle_thresh:
                         coppy_array[self.grid_to_index(x, y)] = 100
                         for neighbor in self.neighbors_of_8(x, y):
                             newX, newY = self.force_inbound(neighbor[0], neighbor[1])
@@ -166,7 +170,8 @@ class Frontier:
 
             need_assignment -= 1
 
-        return frontier_list
+        retVal = frontiersResponse(frontier_list)
+        return retVal
 
 
     def get_frontier_cells(self):
@@ -320,5 +325,34 @@ class Frontier:
         msg.header = self.map.header
         self.pubCspace.publish(msg)
 
-        retVal = frontierResponse(paddedArray)
-        return retVal
+
+        return paddedArray
+
+    def grid_to_world(self, x, y):
+        """
+        Transforms a cell coordinate in the occupancy grid into a world coordinate.
+        :param mapdata [OccupancyGrid] The map information.
+        :param x       [int]           The cell X coordinate.
+        :param y       [int]           The cell Y coordinate.
+        :return        [Point]         The position in the world.
+        """
+        world_point = Point()
+
+        world_point.x = (x + 0.5) * self.map.info.resolution + self.map.info.origin.position.x
+        world_point.y = (y + 0.5) * self.map.info.resolution + self.map.info.origin.position.y
+        # rospy.loginfo("mapdata.info: " + str(mapdata.info))
+        # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
+        # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
+        return world_point
+
+    def run(self):
+        """
+        Runs the node until Ctrl-C is pressed.
+        """
+        # mapdata = PathPlanner.request_map()
+        # self.calc_cspace(mapdata,1)
+        rospy.loginfo("Frontier is running")
+        rospy.spin()
+
+if __name__ == '__main__':
+    Frontier().run()
