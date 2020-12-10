@@ -86,99 +86,100 @@ class PathPlanner:
 
             # frontier_list = frontier_srv().list_of_cells
             rospy.loginfo(frontier_list)
-                #Are we expecting a list of lists of tuples
-                #(x,y),(x,y)...
-                # OR
-                #(x, y, size),(x, y, size)...
-            #Path Plan to each frontier
-                #Using the conversion layer, we will convert curr pos to grid cells
+            if len(frontier_list) > 0:
+                    #Are we expecting a list of lists of tuples
+                    #(x,y),(x,y)...
+                    # OR
+                    #(x, y, size),(x, y, size)...
+                #Path Plan to each frontier
+                    #Using the conversion layer, we will convert curr pos to grid cells
 
 
-            centroid_list = list()
-            distance_list = list()
+                centroid_list = list()
+                distance_list = list()
 
-            centroidX = 0
-            centroidY = 0
+                centroidX = 0
+                centroidY = 0
 
-            rospy.loginfo("inside phase_one_loop")
+                rospy.loginfo("inside phase_one_loop")
 
-            for cluster_MSG in frontier_list:
-                cluster = cluster_MSG.clusterDATA
-                for point_MSG in cluster:
-                    point = point_MSG.tupleDATA
-                    centroidX += point[0]
-                    centroidY += point[1]
-                centroidX /= len(cluster)
-                centroidY /= len(cluster)
-                centroid_list.append((centroidX, centroidY))
+                for cluster_MSG in frontier_list:
+                    cluster = cluster_MSG.clusterDATA
+                    for point_MSG in cluster:
+                        point = point_MSG.tupleDATA
+                        centroidX += point[0]
+                        centroidY += point[1]
+                    centroidX /= len(cluster)
+                    centroidY /= len(cluster)
+                    centroid_list.append((centroidX, centroidY))
 
-            rospy.loginfo("centroid_list: " + str(centroid_list))
+                rospy.loginfo("centroid_list: " + str(centroid_list))
 
-            for centroid in centroid_list:
-                pt = Point(self.px, self.py, 0)
-                pointlist = self.a_star(self.world_to_grid(pt), centroid)
-                distance_to_frontier = len(pointlist)
-                distance_list.append(distance_to_frontier)
-            rospy.loginfo("distance_list: " + str(distance_list))
+                for centroid in centroid_list:
+                    pt = Point(self.px, self.py, 0)
+                    pointlist = self.a_star(self.world_to_grid(pt), centroid)
+                    distance_to_frontier = len(pointlist)
+                    distance_list.append(distance_to_frontier)
+                rospy.loginfo("distance_list: " + str(distance_list))
 
-            #Return sorted list with gird plan length and size of frontier
-            size_list = list()
-            for cluster_MSG in frontier_list:
-                cluster = cluster_MSG.clusterDATA
-                size_list.append(len(cluster))
-
-
-            metric_list = list()
-            for size, distance in zip(size_list, distance_list):
-                metric = float(size) / float(distance)
-                metric_list.append(metric)
-
-            rospy.loginfo("Lists")
-            rospy.loginfo(metric_list)
-            rospy.loginfo(centroid_list)
-            rospy.loginfo(size_list)
-            rospy.loginfo(distance_list)
-
-            combined = list(reversed(sorted(zip(metric_list, centroid_list, size_list, distance_list))))
-            rospy.loginfo(combined)
-            sorted_centeroids = [x for _, x, _, _ in combined]
-            rospy.loginfo(sorted_centeroids)
-            #Has goal changed?
-            #TEMP Removed
-            # attribute error in line 123
-            # curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
-            # curr_goal = curr_nav_goal()
-            # temporary curr_goal
-            curr_goal = (0,0)
-
-            # next line is index out of range error, at this point, I think the sorted_centeroids list is empty
-            # because all of the lists are empty, including distance_list and centroid_list from above.
-            new_goal = sorted_centeroids[0]
-            if not self.is_within_threshold(curr_goal, new_goal):
-            # <If yes> convert grid plan to world plan ()
-
-                # Creating A PoseStamped msg of the current robot position for GetPlan.start
-                curr_pos = PoseStamped()
-                curr_pos.pose.position = Point(self.px, self.py, 0)
-                quat = quaternion_from_euler(0, 0, self.pth)
-                curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-
-                # Convert grid plan to world plan
-                world_point = self.grid_to_world(new_goal[0], new_goal[1])
-
-                goal_pos = PoseStamped()
-                goal_pos.pose.position = world_point
-                quat = quaternion_from_euler(0, 0, 0)
-                goal_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-
-                # Request Plan
-                plan_to_send_robot = self.get_path_to_point(curr_pos, goal_pos)
-
-                #Jason please send this plan to the Lab 4 robot and we're done
-                self.pubPath.publish(plan_to_send_robot)
+                #Return sorted list with gird plan length and size of frontier
+                size_list = list()
+                for cluster_MSG in frontier_list:
+                    cluster = cluster_MSG.clusterDATA
+                    size_list.append(len(cluster))
 
 
-                # set_nav_path(get_plan_obj)
+                metric_list = list()
+                for size, distance in zip(size_list, distance_list):
+                    metric = float(size) / float(distance)
+                    metric_list.append(metric)
+
+                rospy.loginfo("Lists")
+                rospy.loginfo(metric_list)
+                rospy.loginfo(centroid_list)
+                rospy.loginfo(size_list)
+                rospy.loginfo(distance_list)
+
+                combined = list(reversed(sorted(zip(metric_list, centroid_list, size_list, distance_list))))
+                rospy.loginfo(combined)
+                sorted_centeroids = [x for _, x, _, _ in combined]
+                rospy.loginfo(sorted_centeroids)
+                #Has goal changed?
+                #TEMP Removed
+                # attribute error in line 123
+                # curr_nav_goal = rospy.ServiceProxy('what_is_current_goal', "void->tuple")
+                # curr_goal = curr_nav_goal()
+                # temporary curr_goal
+                curr_goal = (0,0)
+
+                # next line is index out of range error, at this point, I think the sorted_centeroids list is empty
+                # because all of the lists are empty, including distance_list and centroid_list from above.
+                new_goal = sorted_centeroids[0]
+                if not self.is_within_threshold(curr_goal, new_goal):
+                # <If yes> convert grid plan to world plan ()
+
+                    # Creating A PoseStamped msg of the current robot position for GetPlan.start
+                    curr_pos = PoseStamped()
+                    curr_pos.pose.position = Point(self.px, self.py, 0)
+                    quat = quaternion_from_euler(0, 0, self.pth)
+                    curr_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+
+                    # Convert grid plan to world plan
+                    world_point = self.grid_to_world(new_goal[0], new_goal[1])
+
+                    goal_pos = PoseStamped()
+                    goal_pos.pose.position = world_point
+                    quat = quaternion_from_euler(0, 0, 0)
+                    goal_pos.pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+
+                    # Request Plan
+                    plan_to_send_robot = self.get_path_to_point(curr_pos, goal_pos)
+
+                    #Jason please send this plan to the Lab 4 robot and we're done
+                    self.pubPath.publish(plan_to_send_robot)
+
+
+                    # set_nav_path(get_plan_obj)
 
 
 
@@ -329,6 +330,7 @@ class PathPlanner:
                     priority = new_cost + PathPlanner.euclidean_distance(neighbour[0], neighbour[1], goal[0], goal[1])
                     frontier.put(neighbour, priority)
                     came_from[neighbour] = current
+                    # rospy.loginfo("Adding a point %d %d to A*'s came from" %(neighbour[0], neighbour[1]))
 
                 # Path Visualization
                 visitedCells = []
