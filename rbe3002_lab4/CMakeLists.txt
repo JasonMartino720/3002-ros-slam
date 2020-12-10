@@ -10,6 +10,7 @@ project(rbe3002_lab4)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   rbe3002-turtlebot
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,7 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
-#   Service1.srv
+#   frontiers.srv
 #   Service2.srv
 # )
 

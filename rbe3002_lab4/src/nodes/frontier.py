@@ -4,6 +4,7 @@ import rospy
 import random
 from nav_msgs.msg import GridCells, OccupancyGrid
 from nav_msgs.srv import GetMap
+from frontiers.srv import frontier, frontierResponse
 
 
 class Frontier:
@@ -13,7 +14,7 @@ class Frontier:
         rospy.init_node("frontier")
 
         #Do we have to make a custom message or can we use a premade one?
-        self.frontierService = rospy.Service('frontiers', list, self.return_frontier)
+        self.frontierService = rospy.Service('frontiers', frontier, self.return_frontier)
 
         self.cspaceService = rospy.Service('cspace', GetMap, self.calc_cspace())
 
@@ -319,4 +320,5 @@ class Frontier:
         msg.header = self.map.header
         self.pubCspace.publish(msg)
 
-        return paddedArray
+        retVal = frontierResponse(paddedArray)
+        return retVal
