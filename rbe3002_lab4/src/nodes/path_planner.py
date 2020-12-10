@@ -73,7 +73,7 @@ class PathPlanner:
 
             #Attribute error
             frontier_srv = rospy.ServiceProxy('frontierTopic', frontiers)
-            frontier_list = frontier_srv()
+            frontier_list = frontier_srv().list_of_cells
             rospy.loginfo(frontier_list)
                 #Are we expecting a list of lists of tuples
                 #(x,y),(x,y)...
@@ -119,9 +119,16 @@ class PathPlanner:
                 metric = float(size) / float(distance)
                 metric_list.append(metric)
 
-            combined = reversed(sorted(zip(metric_list, centroid_list, size_list, distance_list)))
-            sorted_centeroids = [x for _, x, _, _ in combined]
+            rospy.loginfo("Lists")
+            rospy.loginfo(metric_list)
+            rospy.loginfo(centroid_list)
+            rospy.loginfo(size_list)
+            rospy.loginfo(distance_list)
 
+            combined = list(reversed(sorted(zip(metric_list, centroid_list, size_list, distance_list))))
+            rospy.loginfo(combined)
+            sorted_centeroids = [x for _, x, _, _ in combined]
+            rospy.loginfo(sorted_centeroids)
             #Has goal changed?
             #TEMP Removed
             # attribute error in line 123

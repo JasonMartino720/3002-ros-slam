@@ -17,11 +17,11 @@ class Frontier:
 
         rospy.Subscriber("/map", OccupancyGrid, self.update_map)
 
+        rospy.sleep(1.0)
+
         # Create a publisher for the C-space (the enlarged occupancy grid)
         # The topic is "/path_planner/cspace", the message type is GridCells
         self.pubCspace = rospy.Publisher("/cspace", GridCells, queue_size=10)
-
-        rospy.sleep(1.0)
 
         #Do we have to make a custom message or can we use a premade one?
         self.frontierService = rospy.Service('frontierTopic', frontiers, self.return_frontier)
@@ -170,6 +170,8 @@ class Frontier:
 
             need_assignment -= 1
 
+        rospy.loginfo(frontier_list)
+        rospy.loginfo("Fronteir list final return from service callback)")
         retVal = frontiersResponse(frontier_list)
         return retVal
 
@@ -179,25 +181,38 @@ class Frontier:
         #Assumign update Map has already given us the newest map
 
         OBSTACLE_THRESH = 90
-        rospy.loginfo("Calculating edge")
-
+        rospy.loginfo(self.map)
+        rospy.loginfo("Calculating edge (next current map)")
         frontier_map = self.map
+        frontier_map_data_replacement = (0, ) * len(frontier_map.data)
+
+        rospy.loginfo(frontier_map_data_replacement)
+        frontier_map.data = frontier_map_data_replacement
+
+        # list_data = list(frontier_map.data)
+        # rospy.loginfo(list_data)
+        # rospy.loginfo("list_data")
 
         ## Go through each cell in the occupancy grid
         for x in range(self.map.info.height):
             for y in range(self.map.info.width):
+                rospy.loginfo("Trying cell %d %d" % (x, y))
+                rospy.sleep(0.01)
                 #These helper functions have to be imported or the two classes "Frontier" and "map" have to be combined
                 if self.is_cell_unknown(x, y):
-                    #This function is written in map.py!!!!
-                    # is_cell_unknown()
-                    # is_cell_wall()
-                    # is_cell_walkable()
+                    rospy.loginfo("The cell %d %d was unknown" % (x, y))
                     #If any neighbor of a unknown cell is walkable, make the unknow a frontier
                     for neighbor in self.neighbors_of_4(x, y):
-                        if self.is_cell_walkable(neighbor[0],neighbor[1]):
+                        if self.is_cell_walkable(neighbor[0], neighbor[1]):
                             frontier_map.data[self.grid_to_index(x, y)] = 100
 
-        #This returns a occupancy grid with the edge cells only
+        # rospy.loginfo(list_data)
+        # rospy.loginfo("list_data finished")
+
+        # frontier_map.data = tuple(list_data)
+
+        rospy.loginfo(frontier_map)
+        rospy.loginfo("Fronteir map final return from get_fronteir)")
         return frontier_map
 
     def force_inbound(self, curr_x, curr_y):
@@ -280,13 +295,13 @@ class Frontier:
 
         ### REQUIRED CREDIT
         "if the x and y coordinates are out of bounds"
-        return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) < 0.196
+        return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) == 0
 
     def is_cell_wall(self, x, y):
-        return self.get_cell_value(x, y) > 0.55
+        return self.get_cell_value(x, y) == 100
 
     def is_cell_unknown(self, x, y):
-        return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) == 0.5
+        return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) == -1
 
     def calc_cspace(self):
         """
