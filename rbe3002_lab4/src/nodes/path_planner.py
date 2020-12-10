@@ -73,7 +73,12 @@ class PathPlanner:
 
             #Attribute error
             frontier_srv = rospy.ServiceProxy('frontierTopic', frontiers)
-            frontier_list = frontier_srv().list_of_cells
+            frontier_list = frontier_srv()
+
+            rospy.loginfo(frontier_list)
+            rospy.loginfo("Return from frontier service")
+
+            # frontier_list = frontier_srv().list_of_cells
             rospy.loginfo(frontier_list)
                 #Are we expecting a list of lists of tuples
                 #(x,y),(x,y)...

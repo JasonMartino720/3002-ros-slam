@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+import copy
 
 import rospy
 import random
@@ -35,105 +36,80 @@ class Frontier:
         self.map = occupancyGrid
 
 
-    #checks if the cell is an edge cell
-    def is_edge_cell(self, cell):
-        if cell == 100:
-            return True
-        else:
-            return False
-
     #checks if the cell has been assigned previously
-    def is_not_assigned(self, cell, cluster_list):
+    def is_assigned(self, cell, cluster_list):
+        #Cell is a tuple
+        #Cluster list is a tuple of tuples
         for cluster in cluster_list:
             for coord in cluster:
                 if cell == coord:
                     return True
                     break
-                else:
-                    return False
-
+        return False
     #recursive exploration, when a cell is edged and not assigned, we group all the connected cells as one cluster.
-    def recursive_explore(self, point_to_explore, list_to_build):
-        if self.is_edge_cell(point_to_explore):
+    def recursive_explore(self, edgeMap ,point_to_explore, list_to_build):
+        if edgeMap[self.grid_to_index(point_to_explore[0], point_to_explore[1])] == 100 and point_to_explore not in list_to_build:
             list_to_build.append(point_to_explore)
             # I am not sure if this is the correct way of assigning a starting point for neighbors_of_8 to use
             starting_point = point_to_explore
-            for neighbor in self.neighbors_of_8(starting_point):
-                self.recursive_explore(neighbor, list_to_build)
+            for neighbor in self.neighbors_of_8(starting_point[0], starting_point[1]):
+                self.recursive_explore(edgeMap, neighbor, list_to_build)
 
     #dilate and erode the grid with a given number of times to dilate and erode
-    def dilated_and_eroded_grid(self, set_number):
+    def dilated_and_eroded_grid(self, set_number, occuGrid):
         set_num = set_number
         Obstacle_thresh = 90
 
         # original array
-        grid_array = self.map.data
-        coppy_array = list(grid_array)
+        grid_array = occuGrid.data
+        coppy_array = list(copy.deepcopy(grid_array))
         # Dilationthe cell is not assigned
-        for count in range(set_num):
+        for count in range(set_num+1):
             for x in range(self.map.info.height):
                 for y in range(self.map.info.width):
                     ## Inflate the obstacles where necessary
-                    if self.map.data[self.grid_to_index(x, y)] >= Obstacle_thresh:
-                        coppy_array[self.grid_to_index(x, y)] = 100
+                    if grid_array[self.grid_to_index(x, y)] >= Obstacle_thresh:
+                        # coppy_array[self.grid_to_index(x, y)] = 100
                         for neighbor in self.neighbors_of_8(x, y):
                             newX, newY = self.force_inbound(neighbor[0], neighbor[1])
                             coppy_array[self.grid_to_index(newX, newY)] = 100
-            grid_array = coppy_array
+            grid_array = tuple(copy.deepcopy(coppy_array))
 
+        return grid_array
+        #Itentinally commneted the rest of this out since I don't how get eroson working, it always gives all 0s -Kohmei
         # Erosion
         for count in range(set_num):
             for x in range(self.map.info.height):
                 for y in range(self.map.info.width):
                     ## Inflate the obstacles where necessary
-                    if self.map.data[self.grid_to_index(x, y)] >= Obstacle_thresh:
-                        coppy_array[self.grid_to_index(x, y)] = 100
+                    if grid_array[self.grid_to_index(x, y)] >= Obstacle_thresh:
                         for neighbor in self.neighbors_of_8(x, y):
                             newX, newY = self.force_inbound(neighbor[0], neighbor[1])
-                            coppy_array[self.grid_to_index(newX, newY)] = 0
-            grid_array = coppy_array
+                            if grid_array[self.grid_to_index(newX, newX)] == 0:
+                                coppy_array[self.grid_to_index(x, y)] = 0
+            grid_array = tuple(copy.deepcopy(coppy_array))
+
         return grid_array
 
     def return_frontier(self, msg):
 
         egde_occupancy_grid = self.get_frontier_cells()
-        #Josh - this is the occupancy grid with all the edge with the value of 100
-
-        #Kohmei, I believe here is where the calls to josh's new clustering functions will be, I don't have them yet so
-        # I'm not sure what comes next. I assume the clustering algorithm output will already be a list of frontiers, does it include sizes
-        # or is more computation necessary here?
-
-        # #Jason, I think we discuessed that we are sending the raw cluster data in this format:
-        # List(
-        #     List(coordinate1,cord2,cord3 .... cordN) #Cluster 1
-        #     List(coordinate1,cord2,cord3 .... cordN) #Cluster 2
-        #     List(coordinate1,cord2,cord3 .... cordN) #Cluster 3
-        # ) #coordinate is a tuple (x, y)the cell is not assigned
-        # So we don't need any more processing, but idea is that the clustering function will be written here
-
-        #Josh, The rest is for you:
-        # Again, you are given a occupancy grid with cells that are either 0 or 100
-        # 0 means the cell is not a frontier (egde) cell, 100 means it is
-        #You want to output a list of lists of corrdinates (look above)
-        #Where each element in the outer list is one cluster
-
-        #Given the occupanyGrid with edges marked as 100, dilate and erode
-            # egde_occupancy_grid = dilate(egde_occupancy_grid)
-            # egde_occupancy_grid = erode(egde_occupancy_grid)
-        # (Very similar to C-space so please write these two functions)
-
-        #Start a loop here that runs until all cells have been assigned
-        # (hint: how do you know if all cells have been assinged? Count the number of cells you have to assign and
-        # keep track of how many you have assigned so far)
-
-
 
         # counting cells that need to be assigned
         assigned_so_far = 0
         need_assignment = 0
-        for cells in self.dilated_and_eroded_grid(3):
+
+        rospy.loginfo(egde_occupancy_grid)
+        rospy.loginfo("Clustering Input")
+        dilated = self.dilated_and_eroded_grid(3, egde_occupancy_grid)
+        rospy.loginfo(dilated)
+        rospy.loginfo("Dilate output")
+
+        for cells in dilated:
             if cells == 100:
                 need_assignment += 1
+
+        rospy.loginfo("Found %d cells that need assignment" %(need_assignment))
 
         #frontier_list is a list of clusters
         frontier_list = list()
@@ -146,8 +122,8 @@ class Frontier:
             occ_height = self.map.info.height
             occ_width = self.map.info.width
             #use the max values for x and y to find a random value in grid space
-            x_random_value = random.randint(0, occ_width)
-            y_random_value = random.randint(0, occ_height)
+            x_random_value = random.randint(0, occ_width-1)
+            y_random_value = random.randint(0, occ_height-1)
 
 
             #First check to make sure this is a edge cell
@@ -160,12 +136,19 @@ class Frontier:
             #Repeat the reccurtion until you have no more neighbors that are edges left.
             #End of the loop that find a new random cell
             #This should loop until you have catergorized every cell
-            random_point = (occ_height, occ_width)
+            random_point = (x_random_value, y_random_value)
 
-            if self.is_not_assigned(random_point, frontier_list) and self.is_edge_cell(random_point):
+            rospy.loginfo("Length of dilated %d" % (len(dilated)))
+            rospy.loginfo("Random point is (%d, %d)" %(random_point[0], random_point[1]))
+            rospy.loginfo("Resulting index is %d" % (self.grid_to_index(random_point[0], random_point[1])))
+
+            if not self.is_assigned(random_point, frontier_list) and dilated[self.grid_to_index(random_point[0], random_point[1])] == 100:
                 # cluster is a list of tuples that represents points/cells that are unassigned and edged
+                rospy.loginfo("Found a non-assinged cells at (%d, %d)" % (random_point[0], random_point[1]))
                 cluster = list()
-                cluster = self.recursive_explore(random_point, cluster)
+                self.recursive_explore(dilated, random_point, cluster)
+                rospy.loginfo(cluster)
+                rospy.loginfo("New Cluster Created:")
                 frontier_list.append(cluster)
 
             need_assignment -= 1
@@ -173,6 +156,7 @@ class Frontier:
         rospy.loginfo(frontier_list)
         rospy.loginfo("Fronteir list final return from service callback)")
         retVal = frontiersResponse(frontier_list)
+        rospy.loginfo("Convertion to return type complete")
         return retVal
 
 
@@ -183,33 +167,33 @@ class Frontier:
         OBSTACLE_THRESH = 90
         rospy.loginfo(self.map)
         rospy.loginfo("Calculating edge (next current map)")
-        frontier_map = self.map
+        frontier_map = copy.deepcopy(self.map)
         frontier_map_data_replacement = (0, ) * len(frontier_map.data)
 
         rospy.loginfo(frontier_map_data_replacement)
         frontier_map.data = frontier_map_data_replacement
 
-        # list_data = list(frontier_map.data)
-        # rospy.loginfo(list_data)
-        # rospy.loginfo("list_data")
+        list_data = list(frontier_map.data)
+        rospy.loginfo(list_data)
+        rospy.loginfo("list_data")
 
         ## Go through each cell in the occupancy grid
         for x in range(self.map.info.height):
             for y in range(self.map.info.width):
-                rospy.loginfo("Trying cell %d %d" % (x, y))
-                rospy.sleep(0.01)
-                #These helper functions have to be imported or the two classes "Frontier" and "map" have to be combined
+                # rospy.loginfo("Trying cell %d %d" % (x, y))
+                # rospy.sleep(0.01)
+                # #These helper functions have to be imported or the two classes "Frontier" and "map" have to be combined
                 if self.is_cell_unknown(x, y):
-                    rospy.loginfo("The cell %d %d was unknown" % (x, y))
+                    # rospy.loginfo("The cell was unknown")
                     #If any neighbor of a unknown cell is walkable, make the unknow a frontier
                     for neighbor in self.neighbors_of_4(x, y):
                         if self.is_cell_walkable(neighbor[0], neighbor[1]):
-                            frontier_map.data[self.grid_to_index(x, y)] = 100
+                            list_data[self.grid_to_index(x, y)] = 100
 
-        # rospy.loginfo(list_data)
-        # rospy.loginfo("list_data finished")
+        rospy.loginfo(list_data)
+        rospy.loginfo("list_data finished")
 
-        # frontier_map.data = tuple(list_data)
+        frontier_map.data = tuple(list_data)
 
         rospy.loginfo(frontier_map)
         rospy.loginfo("Fronteir map final return from get_fronteir)")
@@ -265,7 +249,7 @@ class Frontier:
         return returnList
 
     def is_cell_in_bounds(self, x, y):
-        return 0 <= x < self.map.info.width - 1 and self.map.info.height - 1 > y >= 0
+        return 0 <= x < (self.map.info.width - 1) and (self.map.info.height - 1) > y >= 0
 
     def grid_to_index(self, x, y):
         """
@@ -280,6 +264,7 @@ class Frontier:
         if not self.is_cell_in_bounds(x, y):
             raise IndexError("The cell index (%d, %d) is outside of this map (size %dx%d)" % (
                 x, y, self.map.info.width, self.map.info.height))
+        # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
         return self.map.data[self.grid_to_index(x, y)]
 
     def is_cell_walkable(self, x, y):
