@@ -36,7 +36,7 @@ class Lab4:
         """
         TOLERANCE = 0.1
 
-        waypoints = msg
+        waypoints = msg.poses
 
         for pose in waypoints:
             self.go_to(pose)

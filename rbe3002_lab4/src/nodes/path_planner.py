@@ -175,6 +175,8 @@ class PathPlanner:
                 plan_to_send_robot = self.get_path_to_point(curr_pos, goal_pos)
 
                 #Jason please send this plan to the Lab 4 robot and we're done
+                self.pubVisited.publish(plan_to_send_robot)
+
 
                 # set_nav_path(get_plan_obj)
 
