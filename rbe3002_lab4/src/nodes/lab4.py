@@ -113,12 +113,12 @@ class Lab4:
         # drive_Ki = 0.05
         drive_Ki = 0
         drive_Kd = 4
-        turn_Kp = -2.0
+        turn_Kp = -1.0
         turn_Ki = 0
-        turn_Kd = -2 #-12
+        turn_Kd = 0 #-12
 
-        TOLERANCE = 0.1 #in meters from goal
-        TURN_HEADSTART = 1.0
+        TOLERANCE = 0.5 #in meters from goal
+        TURN_HEADSTART = 1.0 #secconds
 
         # curr_abs_angle = self.absolute_angle(bool(goalAngle > 0))
 

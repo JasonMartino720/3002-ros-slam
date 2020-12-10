@@ -309,20 +309,34 @@ class Frontier:
         """
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
-
+        set_num = 2
         paddedArray = list(self.map.data)
 
-        ## Go through each cell in the occupancy grid
-        for x in range(self.map.info.height):
-            for y in range(self.map.info.width):
-                ## Inflate the obstacles where necessary
-                if self.map.data[self.grid_to_index(x, y)] > OBSTACLE_THRESH:
-                    paddedArray[self.grid_to_index(x, y)] = 100
-                    for neighbor in self.neighbors_of_8(x, y):
-                        x3, y3 = self.force_inbound(neighbor[0], neighbor[1])
-                        paddedArray[self.grid_to_index(x3, y3)] = 100
+        # ## Go through each cell in the occupancy grid
+        # for x in range(self.map.info.height):
+        #     for y in range(self.map.info.width):
+        #         ## Inflate the obstacles where necessary
+        #         if self.map.data[self.grid_to_index(x, y)] > OBSTACLE_THRESH:
+        #             paddedArray[self.grid_to_index(x, y)] = 100
+        #             for neighbor in self.neighbors_of_8(x, y):
+        #                 x3, y3 = self.force_inbound(neighbor[0], neighbor[1])
+        #                 paddedArray[self.grid_to_index(x3, y3)] = 100
+        # original array
+        grid_array = paddedArray
+        coppy_array = list(copy.deepcopy(grid_array))
+        # Dilationthe cell is not assigned
+        for count in range(set_num):
+            for x in range(self.map.info.height):
+                for y in range(self.map.info.width):
+                    ## Inflate the obstacles where necessary
+                    if grid_array[self.grid_to_index(x, y)] >= 90:
+                        # coppy_array[self.grid_to_index(x, y)] = 100
+                        for neighbor in self.neighbors_of_8(x, y):
+                            newX, newY = self.force_inbound(neighbor[0], neighbor[1])
+                            coppy_array[self.grid_to_index(newX, newY)] = 100
+            grid_array = tuple(copy.deepcopy(coppy_array))
 
-        paddedArray = tuple(paddedArray)
+        paddedArray = tuple(grid_array)
         gridCellsList = []
 
         for x in range(self.map.info.height):
