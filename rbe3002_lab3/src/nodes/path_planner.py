@@ -276,7 +276,7 @@ class PathPlanner:
             current = frontier.get()
             #Path Visualization
             visualize_path.append(current)
-            rospy.loginfo("Adding %f %f to visited list" %(current[0], current[1]))
+            # rospy.loginfo("Adding %f %f to visited list" %(current[0], current[1]))
 
             if current == goal:
                 break
@@ -313,8 +313,8 @@ class PathPlanner:
                 pvis.cells = visitedCells
                 pvis.header = mapdata.header
                 self.pubVisited.publish(pvis)
-                rospy.loginfo(pvis)
-                rospy.loginfo("Published this to /visited")
+                # rospy.loginfo(pvis)
+                # rospy.loginfo("Published this to /visited")
 
         visualize_path.append(goal)
         # Path Visualization
@@ -333,8 +333,8 @@ class PathPlanner:
         pvis.cells = visitedCells
         pvis.header = mapdata.header
         self.pubVisited.publish(pvis)
-        rospy.loginfo(pvis)
-        rospy.loginfo("Published this to /visited")
+        # rospy.loginfo(pvis)
+        # rospy.loginfo("Published this to /visited")
 
         currPos = goal
         finalPath = []
