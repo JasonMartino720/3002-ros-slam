@@ -100,17 +100,17 @@ class Frontier:
         assigned_so_far = 0
         need_assignment = 0
 
-        rospy.loginfo(egde_occupancy_grid)
-        rospy.loginfo("Clustering Input")
+        # rospy.loginfo(egde_occupancy_grid)
+        # rospy.loginfo("Clustering Input")
         dilated = self.dilated_and_eroded_grid(3, egde_occupancy_grid)
-        rospy.loginfo(dilated)
-        rospy.loginfo("Dilate output")
+        # rospy.loginfo(dilated)
+        # rospy.loginfo("Dilate output")
 
         for cells in dilated:
             if cells == 100:
                 need_assignment += 1
 
-        rospy.loginfo("Found %d cells that need assignment" %(need_assignment))
+        # rospy.loginfo("Found %d cells that need assignment" %(need_assignment))
 
         #frontier_list is a list of clusters
         frontier_list = list()
@@ -139,9 +139,9 @@ class Frontier:
             #This should loop until you have catergorized every cell
             random_point = (x_random_value, y_random_value)
 
-            rospy.loginfo("Length of dilated %d" % (len(dilated)))
-            rospy.loginfo("Random point is (%d, %d)" %(random_point[0], random_point[1]))
-            rospy.loginfo("Resulting index is %d" % (self.grid_to_index(random_point[0], random_point[1])))
+            # rospy.loginfo("Length of dilated %d" % (len(dilated)))
+            # rospy.loginfo("Random point is (%d, %d)" %(random_point[0], random_point[1]))
+            # rospy.loginfo("Resulting index is %d" % (self.grid_to_index(random_point[0], random_point[1])))
 
             if not self.is_assigned(random_point, frontier_list) and dilated[self.grid_to_index(random_point[0], random_point[1])] == 100:
                 # cluster is a list of tuples that represents points/cells that are unassigned and edged
@@ -180,8 +180,8 @@ class Frontier:
         #Assumign update Map has already given us the newest map
 
         OBSTACLE_THRESH = 90
-        rospy.loginfo(self.map)
-        rospy.loginfo("Calculating edge (next current map)")
+        # rospy.loginfo(self.map)
+        # rospy.loginfo("Calculating edge (next current map)")
         frontier_map = copy.deepcopy(self.map)
         frontier_map_data_replacement = (0, ) * len(frontier_map.data)
 

@@ -308,7 +308,7 @@ class PathPlanner:
             current = frontier.get()
             # Path Visualization
             visualize_path.append(current)
-            rospy.loginfo("Adding %f %f to visited list" % (current[0], current[1]))
+            # rospy.loginfo("Adding %f %f to visited list" % (current[0], current[1]))
 
             if current == goal:
                 break
@@ -346,8 +346,8 @@ class PathPlanner:
                 pvis.cells = visitedCells
                 pvis.header = self.header
                 # self.pubVisited.publish(pvis)
-                rospy.loginfo(pvis)
-                rospy.loginfo("Published this to /visited")
+                # rospy.loginfo(pvis)
+                # rospy.loginfo("Published this to /visited")
 
         visualize_path.append(goal)
         # Path Visualization
@@ -366,8 +366,8 @@ class PathPlanner:
         pvis.cells = visitedCells
         pvis.header = self.header
         # self.pubVisited.publish(pvis)
-        rospy.loginfo(pvis)
-        rospy.loginfo("Published this to /visited")
+        # rospy.loginfo(pvis)
+        # rospy.loginfo("Published this to /visited")
 
         currPos = goal
         finalPath = []
@@ -451,11 +451,11 @@ class PathPlanner:
         start = self.world_to_grid(start.pose.position)
         goal = self.world_to_grid(goal.pose.position)
         path = self.a_star(start, goal)
-        # rospy.loginfo("a_star output: " + str(path))
+        rospy.loginfo("a_star output: " + str(path))
 
         # ## Optimize waypoints
         waypoints = PathPlanner.optimize_path(path)
-        # rospy.loginfo("Optimized Waypoints: " + str(waypoints))
+        rospy.loginfo("Optimized Waypoints: " + str(waypoints))
         # ## Return a Path message, this line can be erased and returned directly after debug
         return_obj = PathPlanner.path_to_message(self, waypoints)
         # rospy.loginfo("path_to_message output: " + str(return_obj))
