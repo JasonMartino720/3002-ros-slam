@@ -153,7 +153,7 @@ class PathPlanner:
 
             # next line is index out of range error, at this point, I think the sorted_centeroids list is empty
             # because all of the lists are empty, including distance_list and centroid_list from above.
-            new_goal = sorted_centeroids[0]
+            new_goal = (1,1) #sorted_centeroids[0]
             if not self.is_within_threshold(curr_goal, new_goal):
             # <If yes> convert grid plan to world plan ()
 
