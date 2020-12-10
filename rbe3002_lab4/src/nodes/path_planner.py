@@ -28,7 +28,7 @@ class PathPlanner:
         ## Create publishers for A* (expanded cells, frontier, ...)
         ## Choose a the topic names, the message type is GridCells
 
-        self.pubVisited = rospy.Publisher("/robot_path", Path, queue_size=10)
+        self.pubPath = rospy.Publisher("/robot_path", Path, queue_size=10)
 
         rospy.Subscriber("/odom", Odometry, self.update_odometry)
 
@@ -175,7 +175,7 @@ class PathPlanner:
                 plan_to_send_robot = self.get_path_to_point(curr_pos, goal_pos)
 
                 #Jason please send this plan to the Lab 4 robot and we're done
-                self.pubVisited.publish(plan_to_send_robot)
+                self.pubPath.publish(plan_to_send_robot)
 
 
                 # set_nav_path(get_plan_obj)
@@ -530,8 +530,7 @@ class PathPlanner:
 
     def is_within_threshold(self, pos1, pos2):
         # Are the two thresholds close enough to be considered the same centeroids?
-        # return boolean
-        pass
+        return self.euclidean_distance(pos1[0], pos1[1], pos2[0], pos2[1]) < 2
 
     def is_cell_in_bounds(self, x, y):
         return 0 <= x < (self.info.width - 1) and (self.info.height - 1) > y >= 0
