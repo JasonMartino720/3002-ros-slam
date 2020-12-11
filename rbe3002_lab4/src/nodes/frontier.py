@@ -195,9 +195,10 @@ class Frontier:
         gridCellsList = []
 
         OBSTACLE_THRESH = 90
-        # rospy.loginfo(self.map)
+        # rospy.logerr(self.map)
         # rospy.loginfo("Calculating edge (next current map)")
-        frontier_map = copy.deepcopy(self.map)
+        frontier_map = copy.deepcopy(self.calc_cspace("Literally Nothing here"))
+        # rospy.logerr(frontier_map)
         frontier_map_data_replacement = (0, ) * len(frontier_map.data)
 
         rospy.loginfo(frontier_map_data_replacement)
@@ -333,8 +334,8 @@ class Frontier:
         """
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
-        set_num = 2
-        paddedArray = list(self.map.data)
+        set_num = 4
+        paddedArray = list(copy.deepcopy(self.map.data))
 
         # ## Go through each cell in the occupancy grid
         # for x in range(self.map.info.height):

@@ -38,6 +38,8 @@ class Lab4:
 
         waypoints = msg.poses
 
+        self.overallStartTime = rospy.get_time()
+
         for pose in waypoints:
             self.go_to(pose)
 
@@ -117,8 +119,9 @@ class Lab4:
         turn_Ki = 0
         turn_Kd = 0 #-12
 
-        TOLERANCE = 0.5 #in meters from goal
+        TOLERANCE = 0.1 #in meters from goal
         TURN_HEADSTART = 1.0 #secconds
+        CUTOFF_TIME = 10.0  # secconds
 
         # curr_abs_angle = self.absolute_angle(bool(goalAngle > 0))
 
@@ -160,6 +163,10 @@ class Lab4:
                 drive_pidOutput = (drive_Kp * drive_error) + (drive_Ki * drive_integral) + (drive_Kd * drive_derivative)
 
                 drive_clamped = max(-linear_speed_lim, min(drive_pidOutput, linear_speed_lim))
+
+                if (rospy.get_time() > self.overallStartTime + CUTOFF_TIME):
+                    self.send_speed(0, 0)
+                    break
 
                 if(rospy.get_time() > self.startPIDTime + TURN_HEADSTART):
                     # rospy.loginfo(
@@ -204,7 +211,7 @@ class Lab4:
         rospy.loginfo("Going to goal using drive and turn")
         self.startPIDTime = rospy.get_time()
         self.drive_and_turn(MAX_ROTATION_SPEED, MAX_DRIVE_SPEED, msg.pose.position)
-        rospy.sleep(0.5)
+        rospy.sleep(1.5)
 
     def update_odometry(self, msg):
         """
