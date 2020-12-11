@@ -34,7 +34,7 @@ class PathPlanner:
 
         ### Tell ROS that this node subscribes to PoseStamped messages on the '/move_base_simple/goal' topic
         ### When a message is received, call self.go_to
-        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.phase_two_loop())
+        # rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.phase_two_loop())
 
         rospy.sleep(1.0)
         rospy.loginfo("Path planner node ready")
@@ -134,16 +134,16 @@ class PathPlanner:
                     metric = float(size) / float(distance)
                     metric_list.append(metric)
 
-                rospy.loginfo("Lists")
-                rospy.loginfo(metric_list)
-                rospy.loginfo(centroid_list)
-                rospy.loginfo(size_list)
-                rospy.loginfo(distance_list)
+                # rospy.loginfo("Lists")
+                # rospy.loginfo(metric_list)
+                # rospy.loginfo(centroid_list)
+                # rospy.loginfo(size_list)
+                # rospy.loginfo(distance_list)
 
                 combined = list(reversed(sorted(zip(metric_list, centroid_list, size_list, distance_list))))
-                rospy.loginfo(combined)
+                # rospy.loginfo(combined)
                 sorted_centeroids = [x for _, x, _, _ in combined]
-                rospy.loginfo(sorted_centeroids)
+                # rospy.loginfo(sorted_centeroids)
                 #Has goal changed?
                 #TEMP Removed
                 # attribute error in line 123

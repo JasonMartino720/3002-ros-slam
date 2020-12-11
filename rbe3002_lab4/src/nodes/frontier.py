@@ -172,7 +172,6 @@ class Frontier:
         for frontier in frontier_list:
             list_of_tuple_MSG = list()
             for cell in frontier:
-                rospy.loginfo("CELLL " + str(cell))
                 gridCellsList.append(self.grid_to_world(cell[0], cell[1]))
                 list_of_tuple_MSG.append(tupleMSG(cell))
 
@@ -204,8 +203,8 @@ class Frontier:
         frontier_map.data = frontier_map_data_replacement
 
         list_data = list(frontier_map.data)
-        rospy.loginfo(list_data)
-        rospy.loginfo("list_data")
+        # rospy.loginfo(list_data)
+        # rospy.loginfo("list_data")
 
         ## Go through each cell in the occupancy grid
         for x in range(self.map.info.height):
@@ -234,8 +233,8 @@ class Frontier:
 
         frontier_map.data = tuple(list_data)
 
-        rospy.loginfo(frontier_map)
-        rospy.loginfo("Fronteir map final return from get_fronteir)")
+        # rospy.loginfo(frontier_map)
+        # rospy.loginfo("Fronteir map final return from get_fronteir)")
         return frontier_map
 
     def force_inbound(self, curr_x, curr_y):

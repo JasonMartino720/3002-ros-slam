@@ -28,8 +28,13 @@ class Lab4:
         ### When a message is received, call self.update_odometry
         rospy.Subscriber("/odom", Odometry, self.update_odometry)
 
-        rospy.Subscriber("/robot_path", Path, self.execute_path)
+        rospy.Subscriber("/robot_path", Path, self.send_to_move)
 
+
+    def send_to_move(self, msg):
+        rospy.loginfo("in send to move")
+        finalPos = msg.poses[-1]
+        self.pubGoal.publish(finalPos)
 
     def execute_path(self, msg):
         """
@@ -40,8 +45,7 @@ class Lab4:
         waypoints = msg.poses
 
         for pose in waypoints:
-            # self.go_to(pose)
-            self.pubGoal(pose)
+            self.go_to(pose)
         rospy.loginfo("Path Completed!")
 
     def send_speed(self, linear_speed, angular_speed):
