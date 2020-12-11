@@ -22,6 +22,7 @@ class Lab4:
         rospy.init_node('lab4', anonymous=True)
         ### Tell ROS that this node publishes Twist messages on the '/cmd_vel' topic
         self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        self.pubGoal = rospy.Publisher('move_base_simple/goal', PoseStamped, queue_size=10)
 
         ### Tell ROS that this node subscribes to Odometry messages on the '/odom' topic
         ### When a message is received, call self.update_odometry
@@ -39,8 +40,8 @@ class Lab4:
         waypoints = msg.poses
 
         for pose in waypoints:
-            self.go_to(pose)
-
+            # self.go_to(pose)
+            self.pubGoal(pose)
         rospy.loginfo("Path Completed!")
 
     def send_speed(self, linear_speed, angular_speed):
