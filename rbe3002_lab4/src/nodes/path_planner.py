@@ -213,13 +213,21 @@ class PathPlanner:
 
     def phase_two_loop(self, msg):
         self.isPhaseOne = False
-        while True:
-            rospy.loginfo("Inside Phase 2 Loop")
-            pose = Pose()
-            pose.pose = self.grid_to_world(self.px, self.py)
-            quat = quaternion_from_euler(0, 0, 0)
-            pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-            path = self.get_path_to_point(start, msg)
+        # rospy.loginfo("Inside Phase 2 Loop")
+        poseObj = Pose()
+        poseObj.position.x = self.px
+        poseObj.position.y = self.py
+        quat = quaternion_from_euler(0, 0, 0)
+        poseObj.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+        stamped = PoseStamped()
+        stamped.pose = poseObj
+        stamped.header = self.header
+        path = self.get_path_to_point(stamped, msg)
+
+        if not type(path) is int:
+            # Jason please send this plan to the Lab 4 robot and we're done
+            rospy.loginfo(path)
+            # rospy.loginfo("New Path Sent")
             self.pubPath.publish(path)
 
 
@@ -512,6 +520,7 @@ class PathPlanner:
             return return_obj
         else:
             return -1
+
 
     def run(self):
         """
