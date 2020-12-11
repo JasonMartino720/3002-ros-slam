@@ -25,6 +25,9 @@ class Frontier:
         # The topic is "/path_planner/cspace", the message type is GridCells
         self.pubCspace = rospy.Publisher("/cspaceTopic", GridCells, queue_size=10)
 
+        self.pubFrontierList = rospy.Publisher("/frontierListTopic", GridCells, queue_size=10)
+        self.pubEdgeCells = rospy.Publisher("/edgeCellsTopic", GridCells, queue_size=10)
+
         #Do we have to make a custom message or can we use a premade one?
         self.frontierService = rospy.Service('frontierTopic', frontiers, self.return_frontier)
 
@@ -93,7 +96,6 @@ class Frontier:
         return grid_array
 
     def return_frontier(self, nothing):
-
         egde_occupancy_grid = self.get_frontier_cells()
 
         # counting cells that need to be assigned
@@ -163,13 +165,25 @@ class Frontier:
         # test = clusterMSG((tupleMSG((0, 0)),tupleMSG((0, 1))))
         # rospy.loginfo(test)
 
+
+        gridCellsList = []
+
         list_of_cluster_MSG = list()
         for frontier in frontier_list:
             list_of_tuple_MSG = list()
             for cell in frontier:
-                # rospy.loginfo(type(cell))
+                rospy.loginfo("CELLL " + str(cell))
+                gridCellsList.append(self.grid_to_world(cell[0], cell[1]))
                 list_of_tuple_MSG.append(tupleMSG(cell))
+
             list_of_cluster_MSG.append(clusterMSG(list_of_tuple_MSG))
+
+        msg = GridCells()
+        msg.cell_width = self.map.info.resolution
+        msg.cell_height = self.map.info.resolution
+        msg.cells = gridCellsList
+        msg.header = self.map.header
+        self.pubFrontierList.publish(msg)
 
         retVal = frontiersResponse(list_of_cluster_MSG)
         return retVal
@@ -178,6 +192,7 @@ class Frontier:
     def get_frontier_cells(self):
         #Assuming that the map node has been split off into it's own node already
         #Assumign update Map has already given us the newest map
+        gridCellsList = []
 
         OBSTACLE_THRESH = 90
         # rospy.loginfo(self.map)
@@ -204,9 +219,18 @@ class Frontier:
                     for neighbor in self.neighbors_of_4(x, y):
                         if self.is_cell_walkable(neighbor[0], neighbor[1]):
                             list_data[self.grid_to_index(x, y)] = 100
+                            gridCellsList.append(self.grid_to_world(x, y))
+
 
         rospy.loginfo(list_data)
         rospy.loginfo("list_data finished")
+
+        msg = GridCells()
+        msg.cell_width = self.map.info.resolution
+        msg.cell_height = self.map.info.resolution
+        msg.cells = gridCellsList
+        msg.header = self.map.header
+        self.pubEdgeCells.publish(msg)
 
         frontier_map.data = tuple(list_data)
 
