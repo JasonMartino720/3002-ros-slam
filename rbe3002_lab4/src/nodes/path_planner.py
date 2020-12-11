@@ -28,7 +28,7 @@ class PathPlanner:
         ## Create publishers for A* (expanded cells, frontier, ...)
         ## Choose a the topic names, the message type is GridCells
 
-        self.pubPath = rospy.Publisher("/robot_path", Path, queue_size=10)
+        self.pubPath = rospy.Publisher("/robot_path", Path, queue_size=1)
         self.pubCents = rospy.Publisher("/centeroids", PoseArray, queue_size=10)
 
         rospy.Subscriber("/odom", Odometry, self.update_odometry)
@@ -69,7 +69,7 @@ class PathPlanner:
             self.info = None
 
     def phase_one_loop(self):
-        r = rospy.Rate(0.1)  # .2 Hz this is NOT secconds
+        r = rospy.Rate(0.25)  # .2 Hz this is NOT secconds
         while not rospy.is_shutdown():
             #Update C-space
             #Detect frontier cells with edge dectection
@@ -145,7 +145,7 @@ class PathPlanner:
 
                 metric_list = list()
                 for size, distance in zip(size_list, distance_list):
-                    metric = float(size) / float(distance)
+                    metric = float(size*size) / float(distance)
                     metric_list.append(metric)
 
                 rospy.loginfo("Lists")
@@ -429,11 +429,11 @@ class PathPlanner:
 
         rospy.loginfo("Original Path Length: " + str(len(path)))
         for i in range(1, len(path) - 1):
-            rospy.loginfo("Current Point: " + str(i))
+            # rospy.loginfo("Current Point: " + str(i))
             curr_heading = PathPlanner.round_to_45(
                 math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
-            rospy.loginfo("Current Heading: " + str(curr_heading))
-            rospy.loginfo("Last Heading: " + str(last_heading))
+            # rospy.loginfo("Current Heading: " + str(curr_heading))
+            # rospy.loginfo("Last Heading: " + str(last_heading))
 
             if curr_heading == last_heading:
                 rmvIndexList.append(i)
@@ -443,7 +443,7 @@ class PathPlanner:
 
         for index in reversed(rmvIndexList):
             path.pop(index)
-            rospy.loginfo("Popped: " + str(index))
+            # rospy.loginfo("Popped: " + str(index))
 
         return path
 

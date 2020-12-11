@@ -39,7 +39,8 @@ class Lab4:
         waypoints = msg.poses
 
         self.overallStartTime = rospy.get_time()
-
+        rospy.loginfo(waypoints[0])
+        rospy.loginfo("First pose of this path:")
         for pose in waypoints:
             self.go_to(pose)
 
@@ -115,13 +116,13 @@ class Lab4:
         # drive_Ki = 0.05
         drive_Ki = 0
         drive_Kd = 4
-        turn_Kp = -1.0
+        turn_Kp = -6.0
         turn_Ki = 0
         turn_Kd = 0 #-12
 
         TOLERANCE = 0.1 #in meters from goal
-        TURN_HEADSTART = 1.0 #secconds
-        CUTOFF_TIME = 10.0  # secconds
+        TURN_HEADSTART = 3.0 #secconds
+        CUTOFF_TIME = 20.0  # secconds
 
         # curr_abs_angle = self.absolute_angle(bool(goalAngle > 0))
 
@@ -175,7 +176,7 @@ class Lab4:
 
                     self.send_speed(drive_clamped, turn_clamped)
                 else:
-                    rospy.loginfo("Turning Only ")
+                    rospy.loginfo_once("Turning Only ")
                     self.send_speed(0.0, turn_clamped)
 
         self.send_speed(0, 0)

@@ -48,7 +48,6 @@ class Frontier:
             for coord in cluster:
                 if cell == coord:
                     return True
-                    break
         return False
     #recursive exploration, when a cell is edged and not assigned, we group all the connected cells as one cluster.
     def recursive_explore(self, edgeMap ,point_to_explore, list_to_build):
@@ -68,7 +67,7 @@ class Frontier:
         grid_array = occuGrid.data
         coppy_array = list(copy.deepcopy(grid_array))
         # Dilationthe cell is not assigned
-        for count in range(set_num+1):
+        for count in range(set_num):
             for x in range(self.map.info.height):
                 for y in range(self.map.info.width):
                     ## Inflate the obstacles where necessary
@@ -104,7 +103,7 @@ class Frontier:
 
         # rospy.loginfo(egde_occupancy_grid)
         # rospy.loginfo("Clustering Input")
-        dilated = self.dilated_and_eroded_grid(1, egde_occupancy_grid)
+        dilated = copy.deepcopy(self.dilated_and_eroded_grid(1, egde_occupancy_grid))
         # rospy.loginfo(dilated)
         # rospy.loginfo("Dilate output")
 
@@ -112,7 +111,7 @@ class Frontier:
             if cells == 100:
                 need_assignment += 1
 
-        # rospy.loginfo("Found %d cells that need assignment" %(need_assignment))
+        rospy.loginfo("Found %d cells that need assignment" %(need_assignment))
 
         #frontier_list is a list of clusters
         frontier_list = list()
@@ -153,9 +152,10 @@ class Frontier:
                 rospy.loginfo(cluster)
                 rospy.loginfo("New Cluster Created:")
                 frontier_list.append(cluster)
+                need_assignment -= len(cluster)
 
-            need_assignment -= 1
 
+        rospy.loginfo("Ended with %d cells that need assignment" % (need_assignment))
         # rospy.loginfo(frontier_list)
         # rospy.loginfo("Fronteir list final return from service callback)")
         # retVal = frontiersResponse(frontier_list)
@@ -185,6 +185,8 @@ class Frontier:
         msg.header = self.map.header
         self.pubFrontierList.publish(msg)
 
+        rospy.loginfo(list_of_cluster_MSG)
+        rospy.loginfo("Final return fron frontier service")
         retVal = frontiersResponse(list_of_cluster_MSG)
         return retVal
 
@@ -214,11 +216,11 @@ class Frontier:
                 # rospy.loginfo("Trying cell %d %d" % (x, y))
                 # rospy.sleep(0.01)
                 # #These helper functions have to be imported or the two classes "Frontier" and "map" have to be combined
-                if self.is_cell_unknown(x, y):
+                if self.c_is_cell_unknown(x, y):
                     # rospy.loginfo("The cell was unknown")
                     #If any neighbor of a unknown cell is walkable, make the unknow a frontier
                     for neighbor in self.neighbors_of_4(x, y):
-                        if self.is_cell_walkable(neighbor[0], neighbor[1]):
+                        if self.c_is_cell_walkable(neighbor[0], neighbor[1]):
                             list_data[self.grid_to_index(x, y)] = 100
                             gridCellsList.append(self.grid_to_world(x, y))
 
@@ -307,26 +309,30 @@ class Frontier:
         # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
         return self.map.data[self.grid_to_index(x, y)]
 
-    def is_cell_walkable(self, x, y):
-        """
-        A cell is walkable if all of these conditions are true:
-        1. It is within the boundaries of the grid;
-        2. It is free (not unknown, not occupied by an obstacle)
-        :param mapdata [OccupancyGrid] The map information.
-        :param x       [int]           The X coordinate in the grid.
-        :param y       [int]           The Y coordinate in the grid.
-        :return        [boolean]       True if the cell is walkable, False otherwise
-        """
+    def c_get_cell_value(self, x, y):
+        if not self.is_cell_in_bounds(x, y):
+            raise IndexError("The cell index (%d, %d) is outside of this map (size %dx%d)" % (
+                x, y, self.map.info.width, self.map.info.height))
+        # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
+        return self.c_space.data[self.grid_to_index(x, y)]
 
-        ### REQUIRED CREDIT
-        "if the x and y coordinates are out of bounds"
+    def is_cell_walkable(self, x, y):
         return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) == 0
+
+    def c_is_cell_walkable(self, x, y):
+        return self.is_cell_in_bounds(x, y) and self.c_get_cell_value(x, y) == 0
 
     def is_cell_wall(self, x, y):
         return self.get_cell_value(x, y) == 100
 
+    def c_is_cell_wall(self, x, y):
+        return self.c_get_cell_value(x, y) == 100
+
     def is_cell_unknown(self, x, y):
         return self.is_cell_in_bounds(x, y) and self.get_cell_value(x, y) == -1
+
+    def c_is_cell_unknown(self, x, y):
+        return self.is_cell_in_bounds(x, y) and self.c_get_cell_value(x, y) == -1
 
     def calc_cspace(self, msg):
         """
@@ -383,6 +389,8 @@ class Frontier:
         retVal.header = self.map.header
         retVal.info = self.map.info
         retVal.data = paddedArray
+
+        self.c_space = retVal
 
         rospy.loginfo("Calculating C-Space Done")
 
