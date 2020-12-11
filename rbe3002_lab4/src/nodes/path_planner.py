@@ -35,14 +35,16 @@ class PathPlanner:
 
         ### Tell ROS that this node subscribes to PoseStamped messages on the '/move_base_simple/goal' topic
         ### When a message is received, call self.go_to
-        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.phase_two_loop())
+        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.phase_two_loop)
 
         rospy.sleep(1.0)
         # rospy.loginfo("Path planner node ready")
 
         rospy.wait_for_service('cspace')
         self.set_info()
+        self.isPhaseOne = True
         self.phase_one_loop()
+
 
 
     def update_odometry(self, msg):
@@ -70,7 +72,10 @@ class PathPlanner:
 
     def phase_one_loop(self):
         r = rospy.Rate(0.25)  # .2 Hz this is NOT secconds
-        while not rospy.is_shutdown():
+        if not self.isPhaseOne:
+            pass
+        else:
+            rospy.loginfo("inside phase_one_loop")
             #Update C-space
             #Detect frontier cells with edge dectection
             cspace_srv = rospy.ServiceProxy('cspace', GetMap)
@@ -102,7 +107,7 @@ class PathPlanner:
                 centroidX = 0
                 centroidY = 0
 
-                # rospy.loginfo("inside phase_one_loop")
+
 
                 for cluster_MSG in frontier_list:
                     cluster = cluster_MSG.clusterDATA
@@ -206,8 +211,18 @@ class PathPlanner:
 
         # <If no> Restart this loop
 
-    def phase_two_loop(self):
-        return None
+    def phase_two_loop(self, msg):
+        self.isPhaseOne = False
+        while True:
+            rospy.loginfo("Inside Phase 2 Loop")
+            pose = Pose()
+            pose.pose = self.grid_to_world(self.px, self.py)
+            quat = quaternion_from_euler(0, 0, 0)
+            pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+            path = self.get_path_to_point(start, msg)
+            self.pubPath.publish(path)
+
+
 
     def grid_to_world(self, x, y):
         """
