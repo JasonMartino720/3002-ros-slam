@@ -332,7 +332,7 @@ class Frontier:
         """
         OBSTACLE_THRESH = 90
         rospy.loginfo("Calculating C-Space")
-        set_num = 2
+        set_num = 4
         paddedArray = list(self.map.data)
 
         # ## Go through each cell in the occupancy grid

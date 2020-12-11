@@ -50,6 +50,7 @@ class PathPlanner:
         This method is a callback bound to a Subscriber.
         :param msg [Odometry] The current odometry information.
         """
+        # rospy.loginfo("Update Odom new data has come")
         self.angular_z = msg.twist.twist.angular.z
         self.px = msg.pose.pose.position.x
         self.py = msg.pose.pose.position.y
@@ -68,7 +69,10 @@ class PathPlanner:
             self.info = None
 
     def phase_one_loop(self):
-        while True:
+        rate = rospy.Rate(5)
+        while not rospy.is_shutdown():
+            rate.sleep()
+            rospy.loginfo("Phase one loop running")
             #Update C-space
             #Detect frontier cells with edge dectection
             cspace_srv = rospy.ServiceProxy('cspace', GetMap)
@@ -155,8 +159,11 @@ class PathPlanner:
                 # next line is index out of range error, at this point, I think the sorted_centeroids list is empty
                 # because all of the lists are empty, including distance_list and centroid_list from above.
                 new_goal = sorted_centeroids[0]
+
                 if not self.is_within_threshold(curr_goal, new_goal):
                 # <If yes> convert grid plan to world plan ()
+
+                    rospy.logerr("Goal is outside thershold!")
 
                     # Creating A PoseStamped msg of the current robot position for GetPlan.start
                     curr_pos = PoseStamped()
@@ -178,7 +185,7 @@ class PathPlanner:
                     #Jason please send this plan to the Lab 4 robot and we're done
                     self.pubPath.publish(plan_to_send_robot)
 
-
+                rate.sleep()
                     # set_nav_path(get_plan_obj)
 
 
@@ -290,12 +297,15 @@ class PathPlanner:
     def a_star(self, start, goal):
         ### REQUIRED CREDIT
         # rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
-        cspace_srv = rospy.ServiceProxy('cspace', GetMap)
-        try:
-            mapdata = cspace_srv()
-        except rospy.ServiceException, e:
-            rospy.logerr(e)
-            mapdata = None
+        # cspace_srv = rospy.ServiceProxy('cspace', GetMap)
+        # try:
+        #     self.map = cspace_srv().map
+        #     rospy.loginfo("Cspace callback done")
+        # except rospy.ServiceException, e:
+        #     rospy.logerr(e)
+        #     mapdata = None
+
+        rospy.logerr("A* called with start (%d, %d) and goal (%d, %d)" % (start[0], start[1], goal[0], goal[1]))
 
         frontier = PriorityQueue()
         frontier.put(start, 0)
@@ -318,13 +328,13 @@ class PathPlanner:
                 # rospy.loginfo(str(type(cost_so_far[current])))
                 # rospy.loginfo(str(cost_so_far[current]))
                 # rospy.loginfo(str(current))
-                a = cost_so_far[current]
-                b = PathPlanner.euclidean_distance(current[0], current[1], neighbour[0], neighbour[1])
+                # a = cost_so_far[current]
+                # b = PathPlanner.euclidean_distance(current[0], current[1], neighbour[0], neighbour[1])
                 # rospy.loginfo(a)
                 # rospy.loginfo(b)
                 new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0], current[1], neighbour[0],
                                                                                  neighbour[1])
-                new_cost = a + b
+                # new_cost = a + b
                 if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour]:
                     cost_so_far[neighbour] = new_cost
                     priority = new_cost + PathPlanner.euclidean_distance(neighbour[0], neighbour[1], goal[0], goal[1])
@@ -332,48 +342,52 @@ class PathPlanner:
                     came_from[neighbour] = current
                     # rospy.loginfo("Adding a point %d %d to A*'s came from" %(neighbour[0], neighbour[1]))
 
-                # Path Visualization
-                visitedCells = []
-                for cell in visualize_path:
-                    world_point = PathPlanner.grid_to_world(self, cell[0], cell[1])
-                    # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
-                    visitedCells.append(world_point)
-
-                # Path Visualization
-                ## Create a GridCells message and publish it
-                # message for visualizing cells in the visualize_path list
-                pvis = GridCells()
-                pvis.cell_width = self.info.resolution
-                pvis.cell_height = self.info.resolution
-                pvis.cells = visitedCells
-                pvis.header = self.header
+                # # Path Visualization
+                # visitedCells = []
+                # for cell in visualize_path:
+                #     world_point = PathPlanner.grid_to_world(self, cell[0], cell[1])
+                #     # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
+                #     visitedCells.append(world_point)
+                #
+                # # Path Visualization
+                # ## Create a GridCells message and publish it
+                # # message for visualizing cells in the visualize_path list
+                # pvis = GridCells()
+                # pvis.cell_width = self.info.resolution
+                # pvis.cell_height = self.info.resolution
+                # pvis.cells = visitedCells
+                # pvis.header = self.header
                 # self.pubVisited.publish(pvis)
                 # rospy.loginfo(pvis)
                 # rospy.loginfo("Published this to /visited")
 
-        visualize_path.append(goal)
-        # Path Visualization
-        visitedCells = []
-        for cell in visualize_path:
-            world_point = PathPlanner.grid_to_world(self, cell[0], cell[1])
-            # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
-            visitedCells.append(world_point)
-
-        # Path Visualization
-        ## Create a GridCells message and publish it
-        # message for visualizing cells in the visualize_path list
-        pvis = GridCells()
-        pvis.cell_width = self.info.resolution
-        pvis.cell_height = self.info.resolution
-        pvis.cells = visitedCells
-        pvis.header = self.header
-        # self.pubVisited.publish(pvis)
+        rospy.loginfo("Done with A*")
+        # visualize_path.append(goal)
+        # # Path Visualization
+        # visitedCells = []
+        # for cell in visualize_path:
+        #     world_point = PathPlanner.grid_to_world(self, cell[0], cell[1])
+        #     # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
+        #     visitedCells.append(world_point)
+        #
+        # # Path Visualization
+        # ## Create a GridCells message and publish it
+        # # message for visualizing cells in the visualize_path list
+        # pvis = GridCells()
+        # pvis.cell_width = self.info.resolution
+        # pvis.cell_height = self.info.resolution
+        # pvis.cells = visitedCells
+        # pvis.header = self.header
+        # # self.pubVisited.publish(pvis)
         # rospy.loginfo(pvis)
         # rospy.loginfo("Published this to /visited")
-
+        #
         currPos = goal
         finalPath = []
         finalPath.append(goal)
+
+        rospy.logerr(came_from)
+
         while currPos != start:
             currPos = came_from[currPos]
             finalPath.append(currPos)
@@ -381,7 +395,7 @@ class PathPlanner:
         finalPath.reverse()
         rospy.loginfo(finalPath)
 
-        # rospy.loginfo("A* FINAL PATH:")
+        rospy.loginfo("A* FINAL PATH:")
         return finalPath
 
     @staticmethod
@@ -399,11 +413,11 @@ class PathPlanner:
 
         rospy.loginfo("Original Path Length: " + str(len(path)))
         for i in range(1, len(path) - 1):
-            rospy.loginfo("Current Point: " + str(i))
+            # rospy.loginfo("Current Point: " + str(i))
             curr_heading = PathPlanner.round_to_45(
                 math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
-            rospy.loginfo("Current Heading: " + str(curr_heading))
-            rospy.loginfo("Last Heading: " + str(last_heading))
+            # rospy.loginfo("Current Heading: " + str(curr_heading))
+            # rospy.loginfo("Last Heading: " + str(last_heading))
 
             if curr_heading == last_heading:
                 rmvIndexList.append(i)
@@ -413,7 +427,7 @@ class PathPlanner:
 
         for index in reversed(rmvIndexList):
             path.pop(index)
-            rospy.loginfo("Popped: " + str(index))
+            # rospy.loginfo("Popped: " + str(index))
 
         return path
 
@@ -532,6 +546,7 @@ class PathPlanner:
 
     def is_within_threshold(self, pos1, pos2):
         # Are the two thresholds close enough to be considered the same centeroids?
+        rospy.logerr(self.euclidean_distance(pos1[0], pos1[1], pos2[0], pos2[1]))
         return self.euclidean_distance(pos1[0], pos1[1], pos2[0], pos2[1]) < 2
 
     def is_cell_in_bounds(self, x, y):
@@ -552,6 +567,16 @@ class PathPlanner:
         :return  [int] The index.
         """
         return y * self.map.info.width + x
+
+
+    def run(self):
+        """
+        Runs the node until Ctrl-C is pressed.
+        """
+        # mapdata = PathPlanner.request_map()
+        # self.calc_cspace(mapdata,1)
+        rospy.loginfo("Frontier is running")
+        rospy.spin()
 
 if __name__ == '__main__':
     PathPlanner().run()
