@@ -81,7 +81,7 @@ class PathPlanner:
             cspace_srv = rospy.ServiceProxy('cspace', GetMap)
             self.map = cspace_srv().map
             #Cluster frontier cells
-
+            rospy.sleep(0.55)
             # rospy.loginfo("Calling frontier service")
 
             frontier_srv = rospy.ServiceProxy('frontierTopic', frontiers)

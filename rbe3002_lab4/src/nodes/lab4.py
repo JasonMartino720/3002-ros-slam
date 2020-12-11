@@ -19,7 +19,7 @@ class Lab4:
         self.counter = 0
 
         self.firstPath = True
-        self.cutoff_time = 10
+        self.cutoff_time = 16
 
         ### REQUIRED CREDIT
         ### Initialize node, name it 'lab3'
@@ -35,8 +35,9 @@ class Lab4:
 
     def execute_path(self, msg):
         if not self.firstPath:
-            self.cutoff_time = 45
+            self.cutoff_time = 30
         if self.firstPath:
+            rospy.sleep(10)
             self.firstPath = False
 
 
