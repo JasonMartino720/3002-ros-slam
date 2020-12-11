@@ -21,14 +21,14 @@ class PathPlanner:
         Class constructor
         """
         # Initialize the node and call it "path_planner"
-        rospy.loginfo("Started path planner")
+        # rospy.loginfo("Started path planner")
         rospy.init_node("path_planner")
         # Create a new service called "plan_path" that accepts messages of
         # type GetPlan and calls self.plan_path() when a message is received
         ## Create publishers for A* (expanded cells, frontier, ...)
         ## Choose a the topic names, the message type is GridCells
 
-        self.pubPath = rospy.Publisher("/robot_path", Path, queue_size=1)
+        self.pubPath = rospy.Publisher("/robot_path", Path, queue_size=10)
         self.pubCents = rospy.Publisher("/centeroids", PoseArray, queue_size=10)
 
         rospy.Subscriber("/odom", Odometry, self.update_odometry)
@@ -38,7 +38,7 @@ class PathPlanner:
         rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.phase_two_loop())
 
         rospy.sleep(1.0)
-        rospy.loginfo("Path planner node ready")
+        # rospy.loginfo("Path planner node ready")
 
         rospy.wait_for_service('cspace')
         self.set_info()
@@ -77,16 +77,16 @@ class PathPlanner:
             self.map = cspace_srv().map
             #Cluster frontier cells
 
-            rospy.loginfo("Calling frontier service")
+            # rospy.loginfo("Calling frontier service")
 
             frontier_srv = rospy.ServiceProxy('frontierTopic', frontiers)
             frontier_list = frontier_srv().list_of_cells
 
-            rospy.loginfo(frontier_list)
-            rospy.loginfo("Return from frontier service")
+            # rospy.loginfo(frontier_list)
+            # rospy.loginfo("Return from frontier service")
 
             # frontier_list = frontier_srv().list_of_cells
-            rospy.loginfo(frontier_list)
+            # rospy.loginfo(frontier_list)
             if len(frontier_list) > 0:
                     #Are we expecting a list of lists of tuples
                     #(x,y),(x,y)...
@@ -102,7 +102,7 @@ class PathPlanner:
                 centroidX = 0
                 centroidY = 0
 
-                rospy.loginfo("inside phase_one_loop")
+                # rospy.loginfo("inside phase_one_loop")
 
                 for cluster_MSG in frontier_list:
                     cluster = cluster_MSG.clusterDATA
@@ -114,7 +114,7 @@ class PathPlanner:
                     centroidY /= len(cluster)
                     centroid_list.append((centroidX, centroidY))
 
-                rospy.loginfo("centroid_list: " + str(centroid_list))
+                # rospy.loginfo("centroid_list: " + str(centroid_list))
                 poseArray = list()
                 for centroid in centroid_list:
                     pose = Pose()
@@ -132,7 +132,7 @@ class PathPlanner:
                 publishVal = PoseArray()
                 publishVal.header = self.header
                 publishVal.poses = poseArray
-                rospy.loginfo("distance_list: " + str(distance_list))
+                # rospy.loginfo("distance_list: " + str(distance_list))
 
                 self.pubCents.publish(publishVal)
 
@@ -148,16 +148,16 @@ class PathPlanner:
                     metric = float(size*size) / float(distance)
                     metric_list.append(metric)
 
-                rospy.loginfo("Lists")
-                rospy.loginfo(metric_list)
-                rospy.loginfo(centroid_list)
-                rospy.loginfo(size_list)
-                rospy.loginfo(distance_list)
+                # rospy.loginfo("Lists")
+                # rospy.loginfo(metric_list)
+                # rospy.loginfo(centroid_list)
+                # rospy.loginfo(size_list)
+                # rospy.loginfo(distance_list)
 
                 combined = list(reversed(sorted(zip(metric_list, centroid_list, size_list, distance_list))))
-                rospy.loginfo(combined)
+                # rospy.loginfo(combined)
                 sorted_centeroids = [x for _, x, _, _ in combined]
-                rospy.loginfo(sorted_centeroids)
+                # rospy.loginfo(sorted_centeroids)
                 #Has goal changed?
                 #TEMP Removed
                 # attribute error in line 123
@@ -191,6 +191,8 @@ class PathPlanner:
 
                     if not type(plan_to_send_robot) is int:
                     #Jason please send this plan to the Lab 4 robot and we're done
+                        rospy.loginfo(plan_to_send_robot)
+                        rospy.loginfo("New Path Sent")
                         self.pubPath.publish(plan_to_send_robot)
 
                 r.sleep()
@@ -219,9 +221,9 @@ class PathPlanner:
 
         world_point.x = (x + 0.5) * self.map.info.resolution + self.map.info.origin.position.x
         world_point.y = (y + 0.5) * self.map.info.resolution + self.map.info.origin.position.y
-        # rospy.loginfo("mapdata.info: " + str(mapdata.info))
-        # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
-        # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
+        # # rospy.loginfo("mapdata.info: " + str(mapdata.info))
+        # # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
+        # # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
         return world_point
 
 
@@ -259,9 +261,9 @@ class PathPlanner:
 
         world_point.x = (x + 0.5) * self.info.resolution + self.info.origin.position.x
         world_point.y = (y + 0.5) * self.info.resolution + self.info.origin.position.y
-        # rospy.loginfo("mapdata.info: " + str(mapdata.info))
-        # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
-        # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
+        # # rospy.loginfo("mapdata.info: " + str(mapdata.info))
+        # # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
+        # # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
         return world_point
 
     def world_to_grid(self, wp):
@@ -286,7 +288,7 @@ class PathPlanner:
         :param  path   [[(int,int)]]   The path as a list of tuples (cell coordinates).
         :return        [[PoseStamped]] The path as a list of PoseStamped (world coordinates).
         """
-        # rospy.loginfo("converting path into a list of PoseStamped")
+        # # rospy.loginfo("converting path into a list of PoseStamped")
         posestamp_list = []
         for i in range(len(path)):
             yaw = 0
@@ -306,7 +308,7 @@ class PathPlanner:
 
     def a_star(self, start, goal):
         ### REQUIRED CREDIT
-        # rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
+        # # rospy.loginfo("Executing A* from (%d,%d) to (%d,%d)" % (start[0], start[1], goal[0], goal[1]))
         # cspace_srv = rospy.ServiceProxy('cspace', GetMap)
         # try:
         #     mapdata = cspace_srv()
@@ -314,7 +316,7 @@ class PathPlanner:
         #     rospy.logerr(e)
         #     mapdata = None
         try:
-            rospy.loginfo("Starting A* from %d, %d to %d, %d" %(start[0], start[1], goal[0], goal[1]))
+            # rospy.loginfo("Starting A* from %d, %d to %d, %d" %(start[0], start[1], goal[0], goal[1]))
 
             frontier = PriorityQueue()
             frontier.put(start, 0)
@@ -334,7 +336,7 @@ class PathPlanner:
                 current = frontier.get()
                 # Path Visualization
                 visualize_path.append(current)
-                # rospy.loginfo("Adding %f %f to visited list" % (current[0], current[1]))
+                # # rospy.loginfo("Adding %f %f to visited list" % (current[0], current[1]))
 
                 # rospy.logerr(exitCounter)
                 # rospy.logerr(goal)
@@ -342,13 +344,13 @@ class PathPlanner:
                     break
 
                 for neighbour in PathPlanner.neighbors_of_8(self, current[0], current[1]):
-                    # rospy.loginfo(cost_so_far[current])
-                    # rospy.loginfo(current)
-                    # rospy.loginfo(neighbour)
+                    # # rospy.loginfo(cost_so_far[current])
+                    # # rospy.loginfo(current)
+                    # # rospy.loginfo(neighbour)
                     # a = cost_so_far[current]
                     # b = PathPlanner.euclidean_distance(current[0], current[1], neighbour[0], neighbour[1])
-                    # rospy.loginfo(a)
-                    # rospy.loginfo(b)
+                    # # rospy.loginfo(a)
+                    # # rospy.loginfo(b)
                     # new_cost = a + b
                     new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0], current[1], neighbour[0],
                                                                                      neighbour[1])
@@ -358,13 +360,13 @@ class PathPlanner:
                         priority = new_cost + PathPlanner.euclidean_distance(neighbour[0], neighbour[1], goal[0], goal[1])
                         frontier.put(neighbour, priority)
                         came_from[neighbour] = current
-                        # rospy.loginfo("Adding a point %d %d to A*'s came from" %(neighbour[0], neighbour[1]))
+                        # # rospy.loginfo("Adding a point %d %d to A*'s came from" %(neighbour[0], neighbour[1]))
 
                     # Path Visualization
                     visitedCells = []
                     for cell in visualize_path:
                         world_point = PathPlanner.grid_to_world(self, cell[0], cell[1])
-                        # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
+                        # # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
                         visitedCells.append(world_point)
 
                     # Path Visualization
@@ -376,15 +378,15 @@ class PathPlanner:
                     pvis.cells = visitedCells
                     pvis.header = self.header
                     # self.pubVisited.publish(pvis)
-                    # rospy.loginfo(pvis)
-                    # rospy.loginfo("Published this to /visited")
+                    # # rospy.loginfo(pvis)
+                    # # rospy.loginfo("Published this to /visited")
 
             visualize_path.append(goal)
             # Path Visualization
             visitedCells = []
             for cell in visualize_path:
                 world_point = PathPlanner.grid_to_world(self, cell[0], cell[1])
-                # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
+                # # rospy.loginfo("Converting %f %f to visited list" % (current[0], current[1]))
                 visitedCells.append(world_point)
 
             # Path Visualization
@@ -396,8 +398,8 @@ class PathPlanner:
             pvis.cells = visitedCells
             pvis.header = self.header
             # self.pubVisited.publish(pvis)
-            # rospy.loginfo(pvis)
-            # rospy.loginfo("Published this to /visited")
+            # # rospy.loginfo(pvis)
+            # # rospy.loginfo("Published this to /visited")
 
             currPos = goal
             finalPath = []
@@ -407,9 +409,9 @@ class PathPlanner:
                 finalPath.append(currPos)
 
             finalPath.reverse()
-            rospy.loginfo(finalPath)
+            # rospy.loginfo(finalPath)
 
-            # rospy.loginfo("A* FINAL PATH:")
+            # # rospy.loginfo("A* FINAL PATH:")
             return finalPath
         except:
             return -1
@@ -422,18 +424,18 @@ class PathPlanner:
         :return     [[(x,y)]] The optimized path as a list of tuples (grid coordinates)
         """
         ### EXTRA CREDIT
-        # rospy.loginfo("Optimizing path")
+        # # rospy.loginfo("Optimizing path")
         curr_heading = 0
         last_heading = 0
         rmvIndexList = []
 
-        rospy.loginfo("Original Path Length: " + str(len(path)))
+        # rospy.loginfo("Original Path Length: " + str(len(path)))
         for i in range(1, len(path) - 1):
-            # rospy.loginfo("Current Point: " + str(i))
+            # # rospy.loginfo("Current Point: " + str(i))
             curr_heading = PathPlanner.round_to_45(
                 math.degrees(math.atan2((path[i + 1][1] - path[i][1]), (path[i + 1][0] - path[i][0]))))
-            # rospy.loginfo("Current Heading: " + str(curr_heading))
-            # rospy.loginfo("Last Heading: " + str(last_heading))
+            # # rospy.loginfo("Current Heading: " + str(curr_heading))
+            # # rospy.loginfo("Last Heading: " + str(last_heading))
 
             if curr_heading == last_heading:
                 rmvIndexList.append(i)
@@ -443,7 +445,7 @@ class PathPlanner:
 
         for index in reversed(rmvIndexList):
             path.pop(index)
-            # rospy.loginfo("Popped: " + str(index))
+            # # rospy.loginfo("Popped: " + str(index))
 
         return path
 
@@ -462,12 +464,12 @@ class PathPlanner:
         :return     [Path]        A Path message (the coordinates are expressed in the world)
         """
         ### REQUIRED CREDIT
-        rospy.loginfo("Returning a Path message")
+        # rospy.loginfo("Returning a Path message")
         path_message = Path()
-        rospy.loginfo("The path is: " + str(path))
+        # rospy.loginfo("The path is: " + str(path))
         path_message.poses = PathPlanner.path_to_poses(self, path)
         path_message.header = self.header
-        rospy.loginfo("path_message: " + str(path_message))
+        # rospy.loginfo("path_message: " + str(path_message))
         return path_message
 
     def get_path_to_point(self, start, goal):
@@ -484,14 +486,14 @@ class PathPlanner:
         goal = self.world_to_grid(goal.pose.position)
         path = self.a_star(start, goal)
         if not type(path) is int:
-            rospy.loginfo("a_star output: " + str(path))
+            # rospy.loginfo("a_star output: " + str(path))
 
             # ## Optimize waypoints
             waypoints = PathPlanner.optimize_path(path)
-            rospy.loginfo("Optimized Waypoints: " + str(waypoints))
+            # rospy.loginfo("Optimized Waypoints: " + str(waypoints))
             # ## Return a Path message, this line can be erased and returned directly after debug
             return_obj = PathPlanner.path_to_message(self, waypoints)
-            # rospy.loginfo("path_to_message output: " + str(return_obj))
+            # # rospy.loginfo("path_to_message output: " + str(return_obj))
             return return_obj
         else:
             return -1
@@ -502,7 +504,7 @@ class PathPlanner:
         """
         # mapdata = PathPlanner.request_map()
         # self.calc_cspace(mapdata,1)
-        rospy.loginfo("Path Planner is running")
+        # rospy.loginfo("Path Planner is running")
         rospy.spin()
 
     def neighbors_of_4(self, x, y):
@@ -574,7 +576,7 @@ class PathPlanner:
         if not self.is_cell_in_bounds(x, y):
             raise IndexError("The cell index (%d, %d) is outside of this map (size %dx%d)" % (
                 x, y, self.info.width, self.info.height))
-        # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
+        # # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
         return self.map.data[self.grid_to_index(x, y)]
 
     def grid_to_index(self, x, y):

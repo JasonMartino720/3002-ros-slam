@@ -16,6 +16,10 @@ class Lab4:
         self.px = 0
         self.py = 0
         self.pth = 0
+        self.counter = 0
+
+        self.firstPath = True
+        self.cutoff_time = 10
 
         ### REQUIRED CREDIT
         ### Initialize node, name it 'lab3'
@@ -27,10 +31,16 @@ class Lab4:
         ### When a message is received, call self.update_odometry
         rospy.Subscriber("/odom", Odometry, self.update_odometry)
 
-        rospy.Subscriber("/robot_path", Path, self.execute_path)
-
+        rospy.Subscriber("/robot_path", Path, self.execute_path, queue_size=1)
 
     def execute_path(self, msg):
+        if not self.firstPath:
+            self.cutoff_time = 45
+        if self.firstPath:
+            self.firstPath = False
+
+
+        self.counter += 1
         """
         Expecing a world point Path
         """
@@ -39,12 +49,12 @@ class Lab4:
         waypoints = msg.poses
 
         self.overallStartTime = rospy.get_time()
-        rospy.loginfo(waypoints[0])
-        rospy.loginfo("First pose of this path:")
+        rospy.loginfo(waypoints)
+        rospy.loginfo("Running this waypoint path")
         for pose in waypoints:
             self.go_to(pose)
 
-        rospy.loginfo("Path Completed!")
+        rospy.logerr("Path Completed!")
 
     def send_speed(self, linear_speed, angular_speed):
         """
@@ -103,11 +113,11 @@ class Lab4:
 
                 clamped = max(-aspeed, min(pidOutput, aspeed))
                 self.send_speed(0, clamped)
-                rospy.loginfo(
-                    'The target orientation is %f we are currently at %f the error is %f, the intergeral is %f, deriviate is %f -> clamped is %f' % (
-                        goalAngle, self.pth, error, integral, derivative, clamped))
+                # rospy.loginfo(
+                #     'The target orientation is %f we are currently at %f the error is %f, the intergeral is %f, deriviate is %f -> clamped is %f' % (
+                #         goalAngle, self.pth, error, integral, derivative, clamped))
 
-        rospy.loginfo("Rotate Done!")
+        # rospy.loginfo("Rotate Done!")
         self.send_speed(0, 0)
 
     def drive_and_turn(self, angular_speed_lim, linear_speed_lim, goal):
@@ -122,7 +132,7 @@ class Lab4:
 
         TOLERANCE = 0.1 #in meters from goal
         TURN_HEADSTART = 3.0 #secconds
-        CUTOFF_TIME = 20.0  # secconds
+        CUTOFF_TIME = self.cutoff_time
 
         # curr_abs_angle = self.absolute_angle(bool(goalAngle > 0))
 
@@ -148,7 +158,7 @@ class Lab4:
                 turn_pidOutput = (turn_Kp * turn_error) + (turn_Ki * turn_integral) + (turn_Kd * turn_derivative)
 
                 turn_clamped = max(-angular_speed_lim, min(turn_pidOutput, angular_speed_lim))
-                # rospy.loginfo(
+                # # rospy.loginfo(
                 #     'The target orientation is %f we are currently at %f the error is %f, the intergeral is %f, deriviate is %f -> clamped is %f' % (
                 #         turn_target_angle, self.pth, turn_error, turn_integral, turn_derivative, turn_clamped))
 
@@ -166,11 +176,12 @@ class Lab4:
                 drive_clamped = max(-linear_speed_lim, min(drive_pidOutput, linear_speed_lim))
 
                 if (rospy.get_time() > self.overallStartTime + CUTOFF_TIME):
+                    rospy.logerr("This path timed out, exiting loop")
                     self.send_speed(0, 0)
                     break
 
                 if(rospy.get_time() > self.startPIDTime + TURN_HEADSTART):
-                    # rospy.loginfo(
+                    # # rospy.loginfo(
                     #     'The target pos is %f, %f we are currently at %f, %f error %f int %f derivative %f clamped is %f' % (
                     #         self.goal.x, self.goal.y, self.px, self.py, drive_error, drive_integral, drive_derivative, drive_clamped))
 
@@ -209,7 +220,7 @@ class Lab4:
 
         self.goal = msg.pose.position
 
-        rospy.loginfo("Going to goal using drive and turn")
+        # rospy.loginfo("Going to goal using drive and turn")
         self.startPIDTime = rospy.get_time()
         self.drive_and_turn(MAX_ROTATION_SPEED, MAX_DRIVE_SPEED, msg.pose.position)
         rospy.sleep(1.5)
@@ -283,9 +294,9 @@ def grid_to_world(self, x, y):
 
     world_point.x = (x + 0.5) * self.map.info.resolution + self.map.info.origin.position.x
     world_point.y = (y + 0.5) * self.map.info.resolution + self.map.info.origin.position.y
-    # rospy.loginfo("mapdata.info: " + str(mapdata.info))
-    # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
-    # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
+    # # rospy.loginfo("mapdata.info: " + str(mapdata.info))
+    # # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
+    # # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
     return world_point
 
 def world_to_grid(self, wp):

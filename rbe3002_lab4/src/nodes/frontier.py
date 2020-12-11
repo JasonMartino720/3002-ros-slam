@@ -14,7 +14,7 @@ from rbe3002_lab4.msg._clusterMSG import clusterMSG
 class Frontier:
 
     def __init__(self):
-        rospy.loginfo("Started Frontier node")
+        # rospy.loginfo("Started Frontier node")
         rospy.init_node("frontier")
 
         rospy.Subscriber("/map", OccupancyGrid, self.update_map)
@@ -34,7 +34,7 @@ class Frontier:
         self.cspaceService = rospy.Service('cspace', GetMap, self.calc_cspace)
 
         rospy.sleep(1.0)
-        rospy.loginfo("Frontier node ready")
+        # rospy.loginfo("Frontier node ready")
 
     def update_map(self, occupancyGrid):
         self.map = occupancyGrid
@@ -101,17 +101,17 @@ class Frontier:
         assigned_so_far = 0
         need_assignment = 0
 
-        # rospy.loginfo(egde_occupancy_grid)
-        # rospy.loginfo("Clustering Input")
-        dilated = copy.deepcopy(self.dilated_and_eroded_grid(1, egde_occupancy_grid))
-        # rospy.loginfo(dilated)
-        # rospy.loginfo("Dilate output")
+        # # rospy.loginfo(egde_occupancy_grid)
+        # # rospy.loginfo("Clustering Input")
+        dilated = copy.deepcopy(self.dilated_and_eroded_grid(2, egde_occupancy_grid))
+        # # rospy.loginfo(dilated)
+        # # rospy.loginfo("Dilate output")
 
         for cells in dilated:
             if cells == 100:
                 need_assignment += 1
 
-        rospy.loginfo("Found %d cells that need assignment" %(need_assignment))
+        # rospy.loginfo("Found %d cells that need assignment" %(need_assignment))
 
         #frontier_list is a list of clusters
         frontier_list = list()
@@ -140,30 +140,30 @@ class Frontier:
             #This should loop until you have catergorized every cell
             random_point = (x_random_value, y_random_value)
 
-            # rospy.loginfo("Length of dilated %d" % (len(dilated)))
-            # rospy.loginfo("Random point is (%d, %d)" %(random_point[0], random_point[1]))
-            # rospy.loginfo("Resulting index is %d" % (self.grid_to_index(random_point[0], random_point[1])))
+            # # rospy.loginfo("Length of dilated %d" % (len(dilated)))
+            # # rospy.loginfo("Random point is (%d, %d)" %(random_point[0], random_point[1]))
+            # # rospy.loginfo("Resulting index is %d" % (self.grid_to_index(random_point[0], random_point[1])))
 
             if not self.is_assigned(random_point, frontier_list) and dilated[self.grid_to_index(random_point[0], random_point[1])] == 100:
                 # cluster is a list of tuples that represents points/cells that are unassigned and edged
-                rospy.loginfo("Found a non-assinged cells at (%d, %d)" % (random_point[0], random_point[1]))
+                # rospy.loginfo("Found a non-assinged cells at (%d, %d)" % (random_point[0], random_point[1]))
                 cluster = list()
                 self.recursive_explore(dilated, random_point, cluster)
-                rospy.loginfo(cluster)
-                rospy.loginfo("New Cluster Created:")
+                # rospy.loginfo(cluster)
+                # rospy.loginfo("New Cluster Created:")
                 frontier_list.append(cluster)
                 need_assignment -= len(cluster)
 
 
-        rospy.loginfo("Ended with %d cells that need assignment" % (need_assignment))
-        # rospy.loginfo(frontier_list)
-        # rospy.loginfo("Fronteir list final return from service callback)")
+        # rospy.loginfo("Ended with %d cells that need assignment" % (need_assignment))
+        # # rospy.loginfo(frontier_list)
+        # # rospy.loginfo("Fronteir list final return from service callback)")
         # retVal = frontiersResponse(frontier_list)
-        # rospy.loginfo("Convertion to return type complete")
+        # # rospy.loginfo("Convertion to return type complete")
 
         #Testing
         # test = clusterMSG((tupleMSG((0, 0)),tupleMSG((0, 1))))
-        # rospy.loginfo(test)
+        # # rospy.loginfo(test)
 
 
         gridCellsList = []
@@ -172,7 +172,7 @@ class Frontier:
         for frontier in frontier_list:
             list_of_tuple_MSG = list()
             for cell in frontier:
-                # rospy.loginfo("CELLL " + str(cell))
+                # # rospy.loginfo("CELLL " + str(cell))
                 gridCellsList.append(self.grid_to_world(cell[0], cell[1]))
                 list_of_tuple_MSG.append(tupleMSG(cell))
 
@@ -185,8 +185,8 @@ class Frontier:
         msg.header = self.map.header
         self.pubFrontierList.publish(msg)
 
-        rospy.loginfo(list_of_cluster_MSG)
-        rospy.loginfo("Final return fron frontier service")
+        # rospy.loginfo(list_of_cluster_MSG)
+        # rospy.loginfo("Final return fron frontier service")
         retVal = frontiersResponse(list_of_cluster_MSG)
         return retVal
 
@@ -198,26 +198,26 @@ class Frontier:
 
         OBSTACLE_THRESH = 90
         # rospy.logerr(self.map)
-        # rospy.loginfo("Calculating edge (next current map)")
+        # # rospy.loginfo("Calculating edge (next current map)")
         frontier_map = copy.deepcopy(self.calc_cspace("Literally Nothing here"))
         # rospy.logerr(frontier_map)
         frontier_map_data_replacement = (0, ) * len(frontier_map.data)
 
-        rospy.loginfo(frontier_map_data_replacement)
+        # rospy.loginfo(frontier_map_data_replacement)
         frontier_map.data = frontier_map_data_replacement
 
         list_data = list(frontier_map.data)
-        rospy.loginfo(list_data)
-        rospy.loginfo("list_data")
+        # rospy.loginfo(list_data)
+        # rospy.loginfo("list_data")
 
         ## Go through each cell in the occupancy grid
         for x in range(self.map.info.height):
             for y in range(self.map.info.width):
-                # rospy.loginfo("Trying cell %d %d" % (x, y))
+                # # rospy.loginfo("Trying cell %d %d" % (x, y))
                 # rospy.sleep(0.01)
                 # #These helper functions have to be imported or the two classes "Frontier" and "map" have to be combined
                 if self.c_is_cell_unknown(x, y):
-                    # rospy.loginfo("The cell was unknown")
+                    # # rospy.loginfo("The cell was unknown")
                     #If any neighbor of a unknown cell is walkable, make the unknow a frontier
                     for neighbor in self.neighbors_of_4(x, y):
                         if self.c_is_cell_walkable(neighbor[0], neighbor[1]):
@@ -225,8 +225,8 @@ class Frontier:
                             gridCellsList.append(self.grid_to_world(x, y))
 
 
-        rospy.loginfo(list_data)
-        rospy.loginfo("list_data finished")
+        # rospy.loginfo(list_data)
+        # rospy.loginfo("list_data finished")
 
         msg = GridCells()
         msg.cell_width = self.map.info.resolution
@@ -237,8 +237,8 @@ class Frontier:
 
         frontier_map.data = tuple(list_data)
 
-        rospy.loginfo(frontier_map)
-        rospy.loginfo("Fronteir map final return from get_fronteir)")
+        # rospy.loginfo(frontier_map)
+        # rospy.loginfo("Fronteir map final return from get_fronteir)")
         return frontier_map
 
     def force_inbound(self, curr_x, curr_y):
@@ -306,14 +306,14 @@ class Frontier:
         if not self.is_cell_in_bounds(x, y):
             raise IndexError("The cell index (%d, %d) is outside of this map (size %dx%d)" % (
                 x, y, self.map.info.width, self.map.info.height))
-        # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
+        # # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
         return self.map.data[self.grid_to_index(x, y)]
 
     def c_get_cell_value(self, x, y):
         if not self.is_cell_in_bounds(x, y):
             raise IndexError("The cell index (%d, %d) is outside of this map (size %dx%d)" % (
                 x, y, self.map.info.width, self.map.info.height))
-        # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
+        # # rospy.loginfo(self.map.data[self.grid_to_index(x, y)])
         return self.c_space.data[self.grid_to_index(x, y)]
 
     def is_cell_walkable(self, x, y):
@@ -339,8 +339,8 @@ class Frontier:
         Published GridCells and returns (to the service) a OccupancyGrid
         """
         OBSTACLE_THRESH = 90
-        rospy.loginfo("Calculating C-Space")
-        set_num = 4
+        # rospy.loginfo("Calculating C-Space")
+        set_num = 3
         paddedArray = list(copy.deepcopy(self.map.data))
 
         # ## Go through each cell in the occupancy grid
@@ -392,7 +392,7 @@ class Frontier:
 
         self.c_space = retVal
 
-        rospy.loginfo("Calculating C-Space Done")
+        # rospy.loginfo("Calculating C-Space Done")
 
         return retVal
 
@@ -408,9 +408,9 @@ class Frontier:
 
         world_point.x = (x + 0.5) * self.map.info.resolution + self.map.info.origin.position.x
         world_point.y = (y + 0.5) * self.map.info.resolution + self.map.info.origin.position.y
-        # rospy.loginfo("mapdata.info: " + str(mapdata.info))
-        # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
-        # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
+        # # rospy.loginfo("mapdata.info: " + str(mapdata.info))
+        # # rospy.loginfo("input for grid_to_world: " + str(x) + ", " + str(y))
+        # # rospy.loginfo("grid_to_world x, y: " + str(world_point.x) + ", " + str(world_point.y))
         return world_point
 
     def run(self):
@@ -419,7 +419,7 @@ class Frontier:
         """
         # mapdata = PathPlanner.request_map()
         # self.calc_cspace(mapdata,1)
-        rospy.loginfo("Frontier is running")
+        # rospy.loginfo("Frontier is running")
         rospy.spin()
 
 if __name__ == '__main__':
