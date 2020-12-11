@@ -104,7 +104,7 @@ class Frontier:
 
         # rospy.loginfo(egde_occupancy_grid)
         # rospy.loginfo("Clustering Input")
-        dilated = self.dilated_and_eroded_grid(3, egde_occupancy_grid)
+        dilated = self.dilated_and_eroded_grid(1, egde_occupancy_grid)
         # rospy.loginfo(dilated)
         # rospy.loginfo("Dilate output")
 
@@ -172,7 +172,7 @@ class Frontier:
         for frontier in frontier_list:
             list_of_tuple_MSG = list()
             for cell in frontier:
-                rospy.loginfo("CELLL " + str(cell))
+                # rospy.loginfo("CELLL " + str(cell))
                 gridCellsList.append(self.grid_to_world(cell[0], cell[1]))
                 list_of_tuple_MSG.append(tupleMSG(cell))
 
@@ -382,6 +382,8 @@ class Frontier:
         retVal.header = self.map.header
         retVal.info = self.map.info
         retVal.data = paddedArray
+
+        rospy.loginfo("Calculating C-Space Done")
 
         return retVal
 

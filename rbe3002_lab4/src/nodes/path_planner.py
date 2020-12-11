@@ -3,7 +3,7 @@
 import math
 
 import rospy
-from geometry_msgs.msg import Point, PoseStamped, Quaternion
+from geometry_msgs.msg import Point, PoseStamped, Quaternion, PoseArray, Pose
 from nav_msgs.msg import GridCells, Path, OccupancyGrid, Odometry
 from nav_msgs.srv import GetPlan, GetMap
 from tf_conversions.posemath import transformations
@@ -29,6 +29,7 @@ class PathPlanner:
         ## Choose a the topic names, the message type is GridCells
 
         self.pubPath = rospy.Publisher("/robot_path", Path, queue_size=10)
+        self.pubCents = rospy.Publisher("/centeroids", PoseArray, queue_size=10)
 
         rospy.Subscriber("/odom", Odometry, self.update_odometry)
 
@@ -77,7 +78,6 @@ class PathPlanner:
 
             rospy.loginfo("Calling frontier service")
 
-            #Attribute error
             frontier_srv = rospy.ServiceProxy('frontierTopic', frontiers)
             frontier_list = frontier_srv().list_of_cells
 
@@ -114,13 +114,23 @@ class PathPlanner:
                     centroid_list.append((centroidX, centroidY))
 
                 rospy.loginfo("centroid_list: " + str(centroid_list))
-
+                poseArray = list()
                 for centroid in centroid_list:
-                    pt = Point(self.px, self.py, 0)
-                    pointlist = self.a_star(self.world_to_grid(pt), centroid)
-                    distance_to_frontier = len(pointlist)
-                    distance_list.append(distance_to_frontier)
+                    pose = Pose()
+                    pose.position = self.grid_to_world(centroid[0], centroid[1])
+                    quat = quaternion_from_euler(0, 0, 0)
+                    pose.orientation = Quaternion(quat[0], quat[1], quat[2], quat[3])
+                    poseArray.append(pose)
+                #     pt = Point(self.px, self.py, 0)
+                #     pointlist = self.a_star(self.world_to_grid(pt), centroid)
+                #     distance_to_frontier = len(pointlist)
+                    distance_list.append(1)
+                publishVal = PoseArray()
+                publishVal.header = self.header
+                publishVal.poses = poseArray
                 rospy.loginfo("distance_list: " + str(distance_list))
+
+                self.pubCents.publish(publishVal)
 
                 #Return sorted list with gird plan length and size of frontier
                 size_list = list()
@@ -297,6 +307,8 @@ class PathPlanner:
             rospy.logerr(e)
             mapdata = None
 
+        rospy.loginfo("Starting A* from %d, %d to %d, %d" %(start[0], start[1], goal[0], goal[1]))
+
         frontier = PriorityQueue()
         frontier.put(start, 0)
 
@@ -304,27 +316,35 @@ class PathPlanner:
         cost_so_far = {start: 0}
         # Path Visualization
         visualize_path = []
-
+        exitCounter = 0
         while not frontier.empty():
+            exitCounter += 1
+
+            if exitCounter > 20000:
+                rospy.logerr("A* took too long!!!")
+                return list((0,0),(0,0),(0,0))
             current = frontier.get()
             # Path Visualization
             visualize_path.append(current)
             # rospy.loginfo("Adding %f %f to visited list" % (current[0], current[1]))
 
+            # rospy.logerr(current)
+            # rospy.logerr(goal)
             if current == goal:
                 break
 
             for neighbour in PathPlanner.neighbors_of_8(self, current[0], current[1]):
-                # rospy.loginfo(str(type(cost_so_far[current])))
-                # rospy.loginfo(str(cost_so_far[current]))
-                # rospy.loginfo(str(current))
-                a = cost_so_far[current]
-                b = PathPlanner.euclidean_distance(current[0], current[1], neighbour[0], neighbour[1])
+                # rospy.loginfo(cost_so_far[current])
+                # rospy.loginfo(current)
+                # rospy.loginfo(neighbour)
+                # a = cost_so_far[current]
+                # b = PathPlanner.euclidean_distance(current[0], current[1], neighbour[0], neighbour[1])
                 # rospy.loginfo(a)
                 # rospy.loginfo(b)
+                # new_cost = a + b
                 new_cost = cost_so_far[current] + PathPlanner.euclidean_distance(current[0], current[1], neighbour[0],
                                                                                  neighbour[1])
-                new_cost = a + b
+
                 if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour]:
                     cost_so_far[neighbour] = new_cost
                     priority = new_cost + PathPlanner.euclidean_distance(neighbour[0], neighbour[1], goal[0], goal[1])
