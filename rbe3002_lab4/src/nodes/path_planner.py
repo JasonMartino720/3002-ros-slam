@@ -69,14 +69,14 @@ class PathPlanner:
             self.info = None
 
     def phase_one_loop(self):
-        r = rospy.Rate(0.25)  # .2 Hz this is NOT secconds
+        r = rospy.Rate(0.10)  # .2 Hz this is NOT secconds
         while not rospy.is_shutdown():
             #Update C-space
             #Detect frontier cells with edge dectection
             cspace_srv = rospy.ServiceProxy('cspace', GetMap)
             self.map = cspace_srv().map
             #Cluster frontier cells
-
+            rospy.sleep(0.55)
             # rospy.loginfo("Calling frontier service")
 
             frontier_srv = rospy.ServiceProxy('frontierTopic', frontiers)
