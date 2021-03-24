@@ -6,4 +6,4 @@ SLAM (simultaneous localization and mapping) is a method used for autonomous veh
 [![Demo Video](https://i.ibb.co/Bg6krnr/RBE-3002-Demo-Thumnail.jpg)](https://youtu.be/R8tJ0mjwc7s)
 (Click me)
 
-This was forked so that I could link this code in my website. Please do not use/copy it if you are currently taking this RBE course.
+This was forked so that I could link this code in [my website](https://kohmeik.com). Please do not use/copy it if you are currently taking this RBE course.
